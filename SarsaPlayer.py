@@ -60,6 +60,7 @@ class SarsaPlayer(MatchPlayer):
             #With the end of a game, we update estimator using the goal reward 
             self.sarsa.observe(current_state, player_choice, reward=temp_sm.get_goal_value(game_role_index))
             playthrough_count += 1
+            
         return playthrough_count
 
     def on_next_move(self, finish_time):
