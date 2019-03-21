@@ -18,8 +18,8 @@ class SarsaPlayer(MatchPlayer):
             self.role = match.our_role_index
             role_count = len(match.sm.get_roles())
             for role_index in range(role_count):
-                #self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'))
-                self.sarsaAgents[role_index] = SarsaTabular()
+                self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
+                #self.sarsaAgents[role_index] = SarsaTabular()
 
         self.match = match
 
@@ -103,6 +103,5 @@ class SarsaPlayer(MatchPlayer):
                 print "action ", self.match.game_info.model.actions[role_index][ls.get_legal(act)], " value is ", self.sarsaAgents[role_index].value(state, act)
             print ""
         
-        print "test: ", len(self.sarsaAgents[self.role].Q)
         ls = sm.get_legal_state(self.role)
         return self.sarsaAgents[self.role].policy(sm.get_current_state(), ls)
