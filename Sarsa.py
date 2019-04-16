@@ -64,6 +64,14 @@ class SarsaEstimator:
 
         return legal_state.get_legal(highest_index)
 
+    def policy_distribution(self, state, legal_state):
+        distribution = []
+        for ind in rante(legal_state.get_count()):
+            distribution += self.value(state,legal_state.get_legal(ind))
+        
+        return distribution
+
+    #During the training phase, we use epsilon-greedy selection.
     def policy_training(self, state, legal_state):
         if random.random() > self.epsilon:
             return self.policy(state, legal_state)
