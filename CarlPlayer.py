@@ -52,30 +52,7 @@ class CarlPlayer(MatchPlayer):
 
         self.perform_sarsa(finish_time)
 
-    # Searches the tree until finish_time (according to SARSA policy), then returns a move.
-    def on_next_move(self, finish_time):
-        self.sm.update_bases(self.match.get_current_state())
-        
-        print "Managed ",  self.perform_mcs(finish_time), "playouts."
-        
-        print "Printing action state values of current state..."
-        for role_index in range(self.role_count):
-            legal_state = self.sm.get_legal_state(role_index)
-            print "****************************************************"
-            if role_index == self.role:
-                print "Us"
-            else:
-                print "Other"
-            print "****************************************************"
-            for act in range(legal_state.get_count()):
-                state = self.sm.get_current_state()
-                print "action ", self.match.game_info.model.actions[role_index][legal_state.get_legal(act)], " value is ", self.sarsaAgents[role_index].value(state, act)
-            print ""
-
-        #TODO: use search tree
-        self.sm.update_bases(self.match.get_current_state())
-        legal_state = self.sm.get_legal_state(self.role)
-        return self.sarsaAgents[self.role].policy(self.sm.get_current_state(), legal_state)
+    
 
     #----SARSA
 
@@ -242,3 +219,49 @@ class CarlPlayer(MatchPlayer):
             root_visits += 1
 
         log.debug("Total visits: %s" % root_visits)
+
+    def choose(self):
+        assert self.root is not None
+        best_score = -1
+        best_selection = None
+
+        # ok - now we dump everything for debug, and return the best score
+        for stat in sorted(self.root.values(),
+                           key=lambda x: x.get(self.match.our_role_index),
+                           reverse=True):
+            score_str = " / ".join(("%.2f" % stat.get(ii)) for ii in range(self.role_count))
+            log.info("Move %s, visits %d, scored %s" % (stat.move, stat.visits, score_str))
+
+            s = stat.get(self.match.our_role_index)
+            if s > best_score:
+                best_score = s
+                best_selection = stat
+
+        assert best_selection is not None
+        log.debug("choice move = %s" % best_selection.move)
+        return best_selection.choice
+
+    # Searches the tree until finish_time (according to SARSA policy), then returns a move.
+    def on_next_move(self, finish_time):
+        self.sm.update_bases(self.match.get_current_state())
+        
+        print "Managed ",  self.perform_mcs(finish_time), "playouts."
+        
+        print "Printing action state values of current state..."
+        for role_index in range(self.role_count):
+            legal_state = self.sm.get_legal_state(role_index)
+            print "****************************************************"
+            if role_index == self.role:
+                print "Us"
+            else:
+                print "Other"
+            print "****************************************************"
+            for act in range(legal_state.get_count()):
+                state = self.sm.get_current_state()
+                print "action ", self.match.game_info.model.actions[role_index][legal_state.get_legal(act)], " value is ", self.sarsaAgents[role_index].value(state, act)
+            print ""
+
+        #TODO: use search tree
+        self.sm.update_bases(self.match.get_current_state())
+        legal_state = self.sm.get_legal_state(self.role)
+        return self.choose()
