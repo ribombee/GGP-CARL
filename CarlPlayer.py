@@ -1,18 +1,33 @@
 import random
-from Sarsa import SarsaEstimator
 import time
+import math
+
+from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
 
+from ggplib.player.mcs import MoveStat
+from ggplib.util import log
 from ggplib.player.base import MatchPlayer
 
-class carlPlayer(MatchPlayer):
+class CarlPlayer(MatchPlayer):
+    sarsaAgents = {}
+    role_count = 0
+    role = 0
+    sm = None
+    playout_base_state = None
+
+    ucb_constant = 1.414
+    max_iterations = -1
+
+    current_move = None
+    current_state = None
+    last_move = None
+    last_state = None
 
     #----GGPLIB
 
     def __init__(self, name=None):
-        super(carlPlayer, self).__init__(name)
-        self.carlAgents = {}
-        self.role = 0
+        super(CarlPlayer, self).__init__(name)
 
     def reset(self, match):
         #Keep the estimator from previous game if the next game is the same
@@ -26,87 +41,87 @@ class carlPlayer(MatchPlayer):
         self.match = match
 
     def on_meta_gaming(self, finish_time):
-        self.do_playouts_sarsa(finish_time)
+        self.sm = self.match.sm.dupe()
 
-    # Returns a move according to SARSA policy
+        self.current_move = self.sm.get_joint_move()
+        self.current_state = self.sm.new_base_state()
+        self.last_move = self.sm.get_joint_move()
+        self.last_state = self.sm.new_base_state()
+
+        self.role_count = len(self.sm.get_roles())
+
+        self.perform_sarsa(finish_time)
+
+    # Searches the tree until finish_time (according to SARSA policy), then returns a move.
     def on_next_move(self, finish_time):
-        sm = self.match.sm
+        self.sm.update_bases(self.match.get_current_state())
         
-        print "Managed ",  self.do_playouts(finish_time), "playouts."
+        print "Managed ",  self.perform_mcs(finish_time), "playouts."
         
         print "Printing action state values of current state..."
-        role_count = len(sm.get_roles())
-        for role_index in range(role_count):
-            ls = sm.get_legal_state(role_index)
+        for role_index in range(self.role_count):
+            legal_state = self.sm.get_legal_state(role_index)
             print "****************************************************"
             if role_index == self.role:
                 print "Us"
             else:
                 print "Other"
             print "****************************************************"
-            for act in range(ls.get_count()):
-                state = sm.get_current_state()
-                print "action ", self.match.game_info.model.actions[role_index][ls.get_legal(act)], " value is ", self.sarsaAgents[role_index].value(state, act)
+            for act in range(legal_state.get_count()):
+                state = self.sm.get_current_state()
+                print "action ", self.match.game_info.model.actions[role_index][legal_state.get_legal(act)], " value is ", self.sarsaAgents[role_index].value(state, act)
             print ""
-        
-        ls = sm.get_legal_state(self.role)
-        return self.sarsaAgents[self.role].policy(sm.get_current_state(), ls)
+
+        #TODO: use search tree
+        self.sm.update_bases(self.match.get_current_state())
+        legal_state = self.sm.get_legal_state(self.role)
+        return self.sarsaAgents[self.role].policy(self.sm.get_current_state(), legal_state)
 
     #----SARSA
 
     #TODO: multithread?
     #Playouts used by SARSA to learn policies before the game starts.
-    def do_playouts_sarsa(self, finish_time):
+    def perform_sarsa(self, finish_time):
         #Playout related variables
-        temp_sm = self.match.sm.dupe()
-        role_count = len(temp_sm.get_roles())
         playout_count = 0
-
-        #State machine variables
-        current_move = temp_sm.get_joint_move()
-        current_state = temp_sm.new_base_state()
-        last_move = temp_sm.get_joint_move()
-        last_state = temp_sm.new_base_state()
 
         #To ensure that we don't overshoot our training time
         time_offset = 0.01
 
         while time.time() + time_offset < finish_time:
             #Rewind the state machine
-            temp_sm.update_bases(self.match.sm.get_current_state())
-            #temp_sm.reset()
+            self.sm.update_bases(self.match.sm.get_current_state())
 
-            current_state = temp_sm.get_current_state(current_state)
             init = True
-            while time.time() + time_offset < finish_time and not temp_sm.is_terminal():
+            while time.time() + time_offset < finish_time and not self.sm.is_terminal():
 
                 #Choose moves for all players.
-                for role_index in range(role_count):
-                    choice = self.sarsaAgents[role_index].policy_training(current_state, temp_sm.get_legal_state(role_index))
-                    current_move.set(role_index, choice)
+                for role_index in range(self.role_count):
+                    choice = self.sarsaAgents[role_index].policy_training(self.current_state, self.sm.get_legal_state(role_index))
+                    self.current_move.set(role_index, choice)
 
                 if not init:
                     #update all agents with bootstrapping
-                    for role_index in range(role_count):
-                        self.sarsaAgents[role_index].observe(last_state, last_move.get(role_index), state_prime=current_state, action_prime=current_move.get(role_index))
+                    for role_index in range(self.role_count):
+                        self.sarsaAgents[role_index].observe(self.last_state, self.last_move.get(role_index), state_prime=self.current_state, action_prime=self.current_move.get(role_index))
                 else:
                      init = False
 
                 #Current move/action becomes last move/action
-                if not temp_sm.is_terminal():
-                    last_state.assign(current_state)
-                    for role_index in range(role_count):
-                        last_move.set(role_index, current_move.get(role_index))
+                if not self.sm.is_terminal():
+                    self.last_state.assign(self.current_state)
+                    for role_index in range(self.role_count):
+                        self.last_move.set(role_index, self.current_move.get(role_index))
 
 
                 # Update current_state with joint move
-                temp_sm.next_state(current_move, current_state)
+                self.sm.next_state(self.current_move, self.current_state)
                 # update the state machine
-                temp_sm.update_bases(current_state)
+                self.sm.update_bases(self.current_state)
             
             #update all agents with end reward
-            for role_index in range(role_count):
-                self.sarsaAgents[role_index].observe(last_state, last_move.get(role_index), reward=temp_sm.get_goal_value(role_index))
+            for role_index in range(self.role_count):
+                self.sarsaAgents[role_index].observe(self.last_state, self.last_move.get(role_index), reward=self.sm.get_goal_value(role_index))
 
             playout_count += 1
         return playout_count
@@ -114,29 +129,25 @@ class carlPlayer(MatchPlayer):
 
 #----MCTS
 
-    def do_playouts(self):
+    def do_playout(self):
         # performs the simplest depth charge, returning our score
-        self.sm.update_bases(self.playout_state)
-
+        current_move = self.sm.get_joint_move()
+        current_state = self.sm.new_base_state()
         while True:
             if self.sm.is_terminal():
                 break
 
-            # randomly assign move for each player
-            #for idx, r in enumerate(self.sm.get_roles()):
-            #    ls = self.sm.get_legal_state(idx)
-            #    choice = ls.get_legal(random.randrange(0, ls.get_count()))
-            #    self.playout_joint_move.set(idx, choice)
+            current_state = self.sm.get_current_state(current_state)
 
             # assign move for each player based on policy learned by SARSA
-            for idx, r, in enumerate(self.sm.get_roles()):
-                ls = self.sm.get_legal_state(idx)
-                action_choice = self.sarsaAgents[role_index].policy(current_state, temp_sm.get_legal_state(role_index))
-                self.playout_joint_move.set(idx, action_choice)
+            for role_index in range(self.role_count):
+                legal_state = self.sm.get_legal_state(role_index)
+                action_choice = self.sarsaAgents[role_index].policy(current_state, legal_state)
+                current_move.set(role_index, action_choice)
 
             # play move
-            self.sm.next_state(self.playout_joint_move, self.playout_state)
-            self.sm.update_bases(self.playout_state)
+            self.sm.next_state(current_move, current_state)
+            self.sm.update_bases(current_state)
 
         # we are only intereted in our score
         return [self.sm.get_goal_value(ii) for ii in range(self.role_count)]
@@ -176,8 +187,8 @@ class carlPlayer(MatchPlayer):
         return random.choice(candidates)
 
     def perform_mcs(self, finish_by):
-        self.playout_state.assign(self.match.get_current_state())
-        self.sm.update_bases(self.playout_state)
+        self.current_state.assign(self.match.get_current_state())
+        self.sm.update_bases(self.current_state)
 
         self.root = {}
 
@@ -202,14 +213,14 @@ class carlPlayer(MatchPlayer):
                     break
 
             # return to current state
-            self.playout_state.assign(self.match.get_current_state())
-            self.sm.update_bases(self.playout_state)
+            self.current_state.assign(self.match.get_current_state())
+            self.sm.update_bases(self.current_state)
 
             assert not self.sm.is_terminal()
 
             # select and set our move
             choice = self.select_move(our_choices, root_visits, self.root)
-            self.joint_move.set(self.match.our_role_index, choice)
+            self.current_move.set(self.match.our_role_index, choice)
 
             # and a random move from other players
             for idx, r in enumerate(self.sm.get_roles()):
@@ -218,10 +229,10 @@ class carlPlayer(MatchPlayer):
                     choices = [ls.get_legal(ii) for ii in range(ls.get_count())]
 
                     # only need to set this once :)
-                    self.joint_move.set(idx, choices[random.randrange(0, ls.get_count())])
+                    self.current_move.set(idx, choices[random.randrange(0, ls.get_count())])
 
             # create a new state
-            self.sm.next_state(self.joint_move, self.playout_state)
+            self.sm.next_state(self.current_move, self.current_state)
 
             # do a depth charge, and update scores
             scores = self.do_playout()

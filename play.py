@@ -7,6 +7,7 @@ from ggplib import interface
 from ggplib.web.server import GGPServer
 
 from SarsaPlayer import SarsaPlayer
+from CarlPlayer import CarlPlayer
 
 def play_runner(player, port):
     interface.initialise_k273(1, log_name_base=player.get_name())
@@ -24,9 +25,16 @@ def play_runner(player, port):
 
 def main():
     import sys
-    port = int(sys.argv[1])
-    player = SarsaPlayer("test")
 
+    player_name = sys.argv[1]
+    port = int(sys.argv[2])
+
+    player = None
+    if player_name.lower() == "sarsa":
+        player = SarsaPlayer("sarsa")
+    else:
+        player = CarlPlayer("carl")
+    
     play_runner(player, port)
 
 
