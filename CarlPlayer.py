@@ -119,7 +119,7 @@ class CarlPlayer(MatchPlayer):
             # assign move for each player based on policy learned by SARSA
             for role_index in range(self.role_count):
                 legal_state = self.sm.get_legal_state(role_index)
-                action_choice = self.sarsaAgents[role_index].policy(current_state, legal_state)
+                action_choice = self.sarsaAgents[role_index].nondet_policy(current_state, legal_state)
                 current_move.set(role_index, action_choice)
 
             # play move

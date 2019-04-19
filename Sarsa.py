@@ -1,9 +1,11 @@
 import random
 import sys
 from sklearn.exceptions import NotFittedError
+from scipy.special import softmax
 import numpy as np
 from numpy import asarray
 from numpy import reshape
+from numpy.random import choice
 
 class SarsaEstimator:
     def __init__(self, estimator, possible_action_count, epsilon = 0.1, discount_factor = 0.9):
@@ -64,10 +66,16 @@ class SarsaEstimator:
 
         return legal_state.get_legal(highest_index)
 
+    def nondet_policy(self, state, legal_state):
+        distribution = self.policy_distribution(state, legal_state)
+        distribution = softmax(distribution)
+        selected = choice(legal_state.get_count(), 1, p=distribution)
+        return legal_state.get_legal(selected)
+    
     def policy_distribution(self, state, legal_state):
         distribution = []
-        for ind in rante(legal_state.get_count()):
-            distribution += self.value(state,legal_state.get_legal(ind))
+        for ind in range(legal_state.get_count()):
+            distribution.append(self.value(state,legal_state.get_legal(ind))[0])
         
         return distribution
 
