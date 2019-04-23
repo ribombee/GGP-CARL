@@ -15,39 +15,25 @@ class Node():
     parent_edge = None
 
     #The number of time this node has been visited.
-    N = 0
+    N = None
 
-    #List of possible actions per player.
-    actions = [[]]
+    #List of child edges.
+    edges = []
 
-    #TODO: reconsider having children as dict?
-    children = {}
-    
-    def getChild(self, joint_move):
-        return self.children[joint_move]
+class Edge():
+    #Nodes that are connected by this state.
+    #Parent is the parent in the game tree.
+    #Child is the transitioned node.
+    parent_node = None
+    child_node = None
 
-    def isTerminal(self):
-        return len(self.actions) == 0
-
-    def __init__(self, parent_edge = None, N = 0, actions = [[]]):
-        self.parent_edge = parent_edge
-        self.N = N
-        self.actions = actions
-            
-
-class Action():
     #The joint move taken in this edge.
     move = None
 
     #N is the number of times the action has been taken in the MCTS
     #Q is a dictionary of roles and their values for this action.
-    N = 0
-    Q = -1
-
-    def __init__(self, move, N = 0, Q = -1):
-        self.move = move
-        self.N = N
-        self.Q = Q
+    N = None
+    Q = {}
 
 class CarlPlayer(MatchPlayer):
     sarsaAgents = {}
@@ -146,65 +132,10 @@ class CarlPlayer(MatchPlayer):
 
 #----MCTS
 
-    def ucb(self, node, action):
-        if(action.N == 0):
-            return float("inf")
-        
-        return action.Q + self.ucb_constant * math.sqrt(math.log(node.N) / action.N) 
+    def do_spepection(self):
+        print("racist comment")
 
-
-    def select_best_move(self, role, current_node):
-        best_action = None
-        best_ucb = -float("inf")
-
-        for action in current_node.actions[role]:
-            temp = self.ucb(current_node, action)
-            if temp > best_ucb:
-                best_ucb = temp
-                best_action = action
-
-        return best_action
-        
-    def select_joint_move(self, current_node):
-        joint_move = self.sm.get_joint_move()
-        for role_index in range(self.role_count):
-            joint_move.set(role_index, self.select_best_move(role_index, current_node))
-
-        return joint_move
-
-    #TODO: create an expansion policy
-    def do_selection(self, root):
-        #Select, based on UCB, what path to traverse.
-        last_node = root
-        current_node = root
-        current_state = self.sm.get_current_state()
-        next_move = None
-
-        while current_node is not None and not current_node.isTerminal():
-            if next_move is not None:
-                self.sm.next_state(next_move, current_state)
-                self.sm.update_bases(current_state)
-
-            next_move = self.select_joint_move(current_node)
-            last_node = current_node
-            current_node = current_node.getChild(next_move)
-                    
-        return last_node, next_move, current_state
-
-    def do_expansion(self, selected_node, next_move, selected_node_state):
-        #We add one edge to the current node
-        new_node = Node(selected_node)
-        selected_node.children[next_move] = new_node
-        
-        self.sm.next_state(next_move, selected_node_state)
-        self.sm.update_bases(selected_node_state)
-
-        if not self.sm.is_terminal():
-            for role in range(self.role_count):
-                role_actions = self.sm.get_legal_state(role).to_list()
-                new_node.actions += role_actions
-        
-    
+        #
 
     def do_playout(self):
         # performs the simplest depth charge, returning our score
@@ -229,7 +160,7 @@ class CarlPlayer(MatchPlayer):
         # we are only intereted in our score
         return [self.sm.get_goal_value(ii) for ii in range(self.role_count)]
 
-    def do_selection_temp(self, choices, visits, all_scores):
+    def do_selection(self, choices, visits, all_scores):
         # here we build up a list of possible candidates, and then return one of them randomly.
         # Most of the time there will only be one candidate.
 
@@ -267,7 +198,7 @@ class CarlPlayer(MatchPlayer):
         self.current_state.assign(self.match.get_current_state())
         self.sm.update_bases(self.current_state)
 
-        self.root = Node()
+        self.root = {}
 
         ls = self.sm.get_legal_state(self.match.our_role_index)
         our_choices = [ls.get_legal(ii) for ii in range(ls.get_count())]
@@ -296,7 +227,7 @@ class CarlPlayer(MatchPlayer):
             assert not self.sm.is_terminal()
 
             # select and set our move
-            choice = self.do_selection_temp(our_choices, root_visits, self.root)
+            choice = self.do_selection(our_choices, root_visits, self.root)
             self.current_move.set(self.match.our_role_index, choice)
 
             # and a random move from other players
