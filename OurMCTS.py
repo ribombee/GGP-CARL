@@ -17,21 +17,6 @@ def hash_joint_move(role_count, joint_move):
     return hash(str(joint_move_list))
 
 class Node():
-    #The parent of this node  
-    #If the parent is null, this node is the root of the tree.
-    parent = None
-
-    #The move taken from parent to reach this node
-    parent_move = None
-
-    #The number of time this node has been visited.
-    N = 0
-
-    #List of possible actions per player.
-    actions = [{}]
-
-    #TODO: reconsider having children as dict?
-    children = {}
     
     def getChild(self, joint_move, role_count):
         hash_key = hash_joint_move(role_count, joint_move)
@@ -40,21 +25,25 @@ class Node():
         else:
             return None
 
-    def __init__(self, parent = None, parent_move = None, N = 0, actions = [{}]):
-        self.parent_move = parent_move
+    def __init__(self, parent = None, parent_move = None):
+        #The parent of this node  
+        #If the parent is null, this node is the root of the tree.
         self.parent = parent
-        self.N = N
-        self.actions = actions
+
+        #The move taken from parent to reach this node
+        self.parent_move = parent_move
+
+        #The number of time this node has been visited.
+        self.N = 0
+
+        #List of possible actions per player.
+        self.actions = [{}]
+
+        #TODO: reconsider having children as dict?
+        self.children = {}
             
 
 class Action():
-    #The joint move taken in this edge.
-    move = None
-
-    #N is the number of times the action has been taken in the MCTS
-    #Q is a dictionary of roles and their values for this action.
-    N = 0
-    Q = -1.0
 
     def __init__(self, move, N = 0, Q = -1):
         self.move = move
@@ -68,7 +57,7 @@ class MCTSPlayer(MatchPlayer):
     playout_base_state = None
 
     ucb_constant = 1.414
-    max_iterations = 1000
+    max_iterations = 10000
 
     current_move = None
     current_state = None
@@ -89,6 +78,12 @@ class MCTSPlayer(MatchPlayer):
             self.role_count = len(match.sm.get_roles())
 
         self.match = match
+    def get_move_name(self, role, move):
+        return self.match.game_info.model.actions[role][move]
+
+    def print_joint_move(self,joint_move):
+        for role_index in range(self.role_count):
+            print "Player no.", role_index, " chose ", self.get_move_name(role_index, joint_move.get(role_index))
 
     def on_meta_gaming(self, finish_time):
         self.sm = self.match.sm.dupe()
@@ -110,16 +105,17 @@ class MCTSPlayer(MatchPlayer):
 
     #Here we select a move with the highest UCB value.
     def select_best_move(self, role, current_node):
-        best_action = None
+        best_action = -1
         best_ucb = -float("inf")
 
         for action_index in current_node.actions[role]:
+            #print role, " player move: ", self.get_move_name(role, action_index)
             temp = self.ucb(current_node, current_node.actions[role][action_index])
             if temp > best_ucb:
                 best_ucb = temp
                 best_action = action_index
 
-        return current_node.actions[role][best_action].move
+        return best_action
         
     #Returns the joint move where each player has its highest valued move based on UCB.
     def select_joint_move(self, current_node):
@@ -138,31 +134,29 @@ class MCTSPlayer(MatchPlayer):
         next_move = None
 
         while (current_node is not None) and (not self.sm.is_terminal()):
-            if next_move is not None:
-                self.sm.next_state(next_move, current_state)
-                self.sm.update_bases(current_state)
-
             next_move = self.select_joint_move(current_node)
+            #self.print_joint_move(next_move)
             last_node = current_node
             
             current_node = current_node.getChild(next_move, self.role_count)
-            if self.mcts_runs < 100:
-                print "current node move hash: ", hash_joint_move(self.role_count, next_move)
-                self.mcts_runs += 1
-            else:
-                exit()
+
+            self.sm.next_state(next_move, current_state)
+            self.sm.update_bases(current_state)
+
+            #if self.mcts_runs < 50:
+            #    print "current node move hash: ", hash_joint_move(self.role_count, next_move)
+            #    self.mcts_runs += 1
+            #else:
+            #    exit()
                 
         
         return last_node, next_move, current_state
 
     def do_expansion(self, selected_node, next_move, selected_node_state):
         #We add one edge to the current node
-        new_node = Node(parent=selected_node, parent_move=next_move, actions=[{}])
+        new_node = Node(parent=selected_node, parent_move=next_move)
         selected_node.children[hash_joint_move(self.role_count, next_move)] = new_node
-        
-        self.sm.next_state(next_move, selected_node_state)
-        self.sm.update_bases(selected_node_state)
-
+        #print selected_node.parent == new_node
         if not self.sm.is_terminal():
             for role in range(self.role_count):
                 new_node.actions.append({})
@@ -200,10 +194,9 @@ class MCTSPlayer(MatchPlayer):
             self.sm.update_bases(current_state)
 
     def do_backpropagation(self, tree_node):
-        while not (tree_node.parent_move == None):
+        while not (tree_node.parent_move == None or tree_node.parent == None):
             
             for role in range(self.role_count):
-                #TODO: index move used by this player
                 index = tree_node.parent_move.get(role)
                 action = tree_node.parent.actions[role][index]
                 action.Q = (action.Q*action.N + self.sm.get_goal_value(role))/(action.N+1)
@@ -219,7 +212,8 @@ class MCTSPlayer(MatchPlayer):
                 legal_state = self.sm.get_legal_state(role)
                 for action_index in range(legal_state.get_count()):
                     action = legal_state.get_legal(action_index)
-                    self.root.actions[role][action_index] = Action(action)
+                    #print "Root creation. Player no.", role, " move: ", self.get_move_name(role, action)
+                    self.root.actions[role][action] = Action(action)
         #print "Test root: "
         #for role in range(self.role_count):
         #    print "Role nr.", role, " actions: ", self.root.actions[role]
@@ -230,6 +224,14 @@ class MCTSPlayer(MatchPlayer):
         
         if self.root is None:
             self.create_root()
+        else:
+            #self.print_joint_move(self.match.joint_move)
+            self.root = self.root.getChild(self.match.joint_move, self.role_count)
+            if self.root is None:
+                self.create_root()
+            else:
+                self.root.parent = None
+                self.root.parent_move = None
         
         self.mcts_runs = 1
         while True:
@@ -242,23 +244,23 @@ class MCTSPlayer(MatchPlayer):
             #reset state machine
             self.sm.update_bases(root_state)
 
-            print("Starting selection")
+            #print("Starting selection")
             node, move, state = self.do_selection(self.root)
-            print("Selection finished")
+            #print("Selection finished")
             new_node = self.do_expansion(node, move, state)
-            print("Expansion finished")
+            #print("Expansion finished")
             self.do_playout()
-            print("playout finished")
+            #print("playout finished")
             self.do_backpropagation(new_node)
-            print("backpropagation finished")
+            #print("backpropagation finished")
             self.mcts_runs += 1
         return self.mcts_runs
 
     def choose(self):
         highestQ = -float("inf")
         bestAction = -1
-        print "our role: ", self.role
-        print "actions: ", self.root.actions[self.role]
+        #print "our role: ", self.role
+        #print "actions: ", self.root.actions[self.role]
         for action in self.root.actions[self.role]:
             actionQ = self.root.actions[self.role][action].Q
             if actionQ > highestQ:
