@@ -8,11 +8,10 @@ from sklearn.linear_model import SGDRegressor
 from ggplib.player.mcs import MoveStat
 from ggplib.util import log
 from ggplib.player.base import MatchPlayer
+from ggplib import interface
 
-#TODO: VERY IMPORTANT!!!! Do memory cleanup
-#TODO: Don't forget memory cleanup :)
-#TODO: Have you done the cleanup already? It really messes up the computer to not do it
-#I think joint move is causing the biggest part of the leak.
+#TODO: Verify that memory cleanup makes sense
+#TODO: Reset state machine correctly between new games
 
 #Helper function for hashing joint moves to use as index for dictionary
 def hash_joint_move(role_count, joint_move):
@@ -20,6 +19,16 @@ def hash_joint_move(role_count, joint_move):
     for role_index in range(role_count):
         joint_move_list.append(joint_move.get(role_index))
     return hash(str(joint_move_list))
+
+def tree_cleanup(node):
+    if node is not None:
+        if node.parent_move is not None:
+            interface.dealloc_jointmove(node.parent_move)
+        node.parent_move = None
+        node.actions = None
+        for child_index in node.children: 
+            tree_cleanup(node.children[child_index])
+        node.children = None
 
 #Node for MCTS search tree
 class Node():
@@ -207,6 +216,7 @@ class MCTSPlayer(MatchPlayer):
         
         if self.root is None:
             self.create_root()
+            self.master_root = self.root
         else:
             self.root = self.root.getChild(self.match.joint_move, self.role_count)
             if self.root is None:
@@ -281,3 +291,21 @@ class MCTSPlayer(MatchPlayer):
         print "Managed ",  runs, "playouts."
         
         return self.choose()
+
+    #Search tree memory dealloc
+    def cleanup(self):
+        print "****************************************************"
+        print "CLEANING"
+        print "****************************************************"
+        if self.master_root is not None:
+            tree_cleanup(self.master_root)
+            self.master_root = None
+            self.root = None
+        if self.current_state is not None:
+            interface.dealloc_basestate(self.current_state)
+            self.current_state = None
+        if self.last_state is not None:
+            interface.dealloc_basestate(self.last_state)
+            self.last_state = None
+        if self.sm is not None:
+            interface.dealloc_statemachine(self.sm)
