@@ -57,7 +57,7 @@ class MCTSPlayer(MatchPlayer):
     playout_base_state = None
 
     ucb_constant = 1.414
-    max_iterations = 10000
+    max_iterations = -1
 
     current_move = None
     current_state = None
@@ -109,16 +109,18 @@ class MCTSPlayer(MatchPlayer):
         best_ucb = -float("inf")
 
         for action_index in current_node.actions[role]:
-            #print role, " player move: ", self.get_move_name(role, action_index)
             temp = self.ucb(current_node, current_node.actions[role][action_index])
+            #print role, " player move: ", self.get_move_name(role, action_index), " ucb: ", temp
             if temp > best_ucb:
                 best_ucb = temp
                 best_action = action_index
 
+        #print role, " player move ", self.get_move_name(role, best_action), " with ucb ", best_ucb, " chosen." 
         return best_action
         
     #Returns the joint move where each player has its highest valued move based on UCB.
     def select_joint_move(self, current_node):
+        #TODO: optimize to not create new joint move every time
         joint_move = self.sm.get_joint_move()
         for role_index in range(self.role_count):
             joint_move.set(role_index, self.select_best_move(role_index, current_node))
@@ -127,6 +129,9 @@ class MCTSPlayer(MatchPlayer):
 
     #TODO: create an expansion policy?
     def do_selection(self, root):
+        #print "----------------------------------------------------------------"
+        #print "selection"
+        #print "----------------------------------------------------------------"
         #Select, based on UCB, what path to traverse.
         last_node = root
         current_node = root
@@ -143,11 +148,15 @@ class MCTSPlayer(MatchPlayer):
             self.sm.next_state(next_move, current_state)
             self.sm.update_bases(current_state)
 
+            #print "selected, move ", self.mcts_runs, ": "
+            #self.print_joint_move(next_move)
             #if self.mcts_runs < 50:
-            #    print "current node move hash: ", hash_joint_move(self.role_count, next_move)
-            #    self.mcts_runs += 1
+                #print "current node move hash: ", hash_joint_move(self.role_count, next_move)
+                #self.mcts_runs += 1
+            #    lol = "lol"
             #else:
             #    exit()
+            
                 
         
         return last_node, next_move, current_state
@@ -194,18 +203,23 @@ class MCTSPlayer(MatchPlayer):
             self.sm.update_bases(current_state)
 
     def do_backpropagation(self, tree_node):
+        #print "----------------------------------------------------------------"
+        #print "backpropagation"
+        #print "----------------------------------------------------------------"
         while not (tree_node.parent_move == None or tree_node.parent == None):
-            
+            #self.print_joint_move(tree_node.parent_move)
             for role in range(self.role_count):
                 index = tree_node.parent_move.get(role)
                 action = tree_node.parent.actions[role][index]
-                action.Q = (action.Q*action.N + self.sm.get_goal_value(role))/(action.N+1)
+                action.Q = (action.Q*action.N + self.sm.get_goal_value(role))/(float(action.N+1.0))
+                #action.Q += self.sm.get_goal_value(role)
                 action.N += 1
             tree_node.N +=1
             tree_node = tree_node.parent
+        self.root.N += 1
 
     def create_root(self):
-        self.root = Node()
+        self.root = Node(None, None)
         if not self.sm.is_terminal():
             for role in range(self.role_count):
                 self.root.actions.append({}) 
@@ -219,6 +233,7 @@ class MCTSPlayer(MatchPlayer):
         #    print "Role nr.", role, " actions: ", self.root.actions[role]
 
     def perform_mcts(self, finish_by):
+        self.mcts_runs = 0
         root_state = self.sm.get_current_state()
         self.sm.update_bases(root_state)
         
@@ -259,10 +274,9 @@ class MCTSPlayer(MatchPlayer):
     def choose(self):
         highestQ = -float("inf")
         bestAction = -1
-        #print "our role: ", self.role
-        #print "actions: ", self.root.actions[self.role]
         for action in self.root.actions[self.role]:
             actionQ = self.root.actions[self.role][action].Q
+            print "Action: ", self.get_move_name(self.role, action), " value: ", actionQ, " visits: ", self.root.actions[self.role][action].N
             if actionQ > highestQ:
                 highestQ = actionQ
                 bestAction = action
