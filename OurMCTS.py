@@ -79,9 +79,8 @@ class MCTSPlayer(MatchPlayer):
 
     #We want to put more emphasis on exploring barely visited nodes.
     ucb_constant = 1.414
-
     #Maximum iterations per game, -1 means no limit
-    max_iterations = -1
+    max_iterations = 10000
 
     #TODO: use this instead of allocating new states/moves in phases
     current_move = None
@@ -93,13 +92,23 @@ class MCTSPlayer(MatchPlayer):
 
     mcts_runs = 1
 
-    #----MCTS
+    #----Helper functions
+
+    def get_move_name(self, role, move):
+        return self.match.game_info.model.actions[role][move]
+
+    def print_joint_move(self,joint_move):
+        for role_index in range(self.role_count):
+            print "Player no.", role_index, " chose ", self.get_move_name(role_index, joint_move.get(role_index))
+
     #Helper function to calculate the ucb value of an action
     def ucb(self, node, action):
         if(action.N == 0 or node.N == 0):
             return float("inf")
         
-        return action.Q + self.ucb_constant * math.sqrt(math.log(node.N) / action.N) 
+        return action.Q/100.0 + self.ucb_constant * math.sqrt(math.log(node.N) / action.N) 
+
+    #----MCTS
 
     #Here we select a move with the highest UCB value.
     def select_best_move(self, role, current_node):
@@ -266,13 +275,6 @@ class MCTSPlayer(MatchPlayer):
             self.role_count = len(match.sm.get_roles())
 
         self.match = match
-    
-    def get_move_name(self, role, move):
-        return self.match.game_info.model.actions[role][move]
-
-    def print_joint_move(self,joint_move):
-        for role_index in range(self.role_count):
-            print "Player no.", role_index, " chose ", self.get_move_name(role_index, joint_move.get(role_index))
 
     def on_meta_gaming(self, finish_time):
         self.sm = self.match.sm.dupe()
@@ -309,3 +311,4 @@ class MCTSPlayer(MatchPlayer):
             self.last_state = None
         if self.sm is not None:
             interface.dealloc_statemachine(self.sm)
+            self.sm = None

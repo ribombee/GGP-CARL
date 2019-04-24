@@ -137,3 +137,5 @@ class SarsaTabular:
             return self.policy(state, legal_state)
         else:
             return legal_state.get_legal(random.randrange(0, legal_state.get_count()))
+
+    
