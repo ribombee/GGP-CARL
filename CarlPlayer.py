@@ -6,7 +6,7 @@ from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
 
 from ggplib.player.mcs import MoveStat
-from ggplib.util import log
+#from ggplib.util import log
 from ggplib.player.base import MatchPlayer
 from ggplib import interface
 

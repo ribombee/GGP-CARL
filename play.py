@@ -9,6 +9,7 @@ from ggplib.web.server import GGPServer
 from SarsaPlayer import SarsaPlayer
 from CarlPlayer import CarlPlayer
 from OurMCTS import MCTSPlayer
+from ggplib.player.random_player import RandomPlayer 
 
 def play_runner(player, port):
     interface.initialise_k273(1, log_name_base=player.get_name())
@@ -31,12 +32,14 @@ def main():
     port = int(sys.argv[2])
 
     player = None
-    if player_name.lower() == "sarsa":
+    if player_name.lower() == "Sarsa":
         player = SarsaPlayer("sarsa")
     elif player_name.lower() == "carl":
-        player = CarlPlayer("carl")
+        player = CarlPlayer("Carl")
     elif player_name.lower() == "mcts":
         player = MCTSPlayer("MCTS test")
+    elif player_name.lower() == "random":
+        player = RandomPlayer("Random")
     else:
         print("No valid player chosen")
         exit()

@@ -26,7 +26,7 @@ def tree_cleanup(node):
             interface.dealloc_jointmove(node.parent_move)
         node.parent_move = None
         node.actions = None
-        for child_index in node.children: 
+        for child_index in node.children:
             tree_cleanup(node.children[child_index])
         node.children = None
 
@@ -89,6 +89,7 @@ class MCTSPlayer(MatchPlayer):
     last_state = None
     
     root = None
+    master_root = None
 
     mcts_runs = 1
 
@@ -225,9 +226,13 @@ class MCTSPlayer(MatchPlayer):
         
         if self.root is None:
             self.create_root()
-            self.master_root = self.root
+            #self.master_root = self.root
         else:
+            old_root = self.root
             self.root = self.root.getChild(self.match.joint_move, self.role_count)
+            del old_root.children[hash_joint_move(self.role_count, self.match.joint_move)]
+            tree_cleanup(old_root)
+
             if self.root is None:
                 self.create_root()
             else:
@@ -299,9 +304,8 @@ class MCTSPlayer(MatchPlayer):
         print "****************************************************"
         print "CLEANING"
         print "****************************************************"
-        if self.master_root is not None:
-            tree_cleanup(self.master_root)
-            self.master_root = None
+        if self.root is not None:
+            tree_cleanup(self.root)
             self.root = None
         if self.current_state is not None:
             interface.dealloc_basestate(self.current_state)
