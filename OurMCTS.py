@@ -304,6 +304,9 @@ class MCTSPlayer(MatchPlayer):
         runs = self.perform_mcts(finish_time)
         print "Managed ",  runs, "playouts."
         
+        self.iteration_count_list.append(runs)
+        self.time_list.append(time.time() - start_time)
+        
         return self.choose()
 
     #Search tree memory dealloc
