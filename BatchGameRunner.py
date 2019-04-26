@@ -25,7 +25,7 @@ class BatchGameRunner:
     #Return incremental IDs for files with the same name.
     def choose_file_suffix(self, logname):
         our_path = os.path.dirname(os.path.realpath(__file__))
-        filenames = os.listdir(our_path + self.filepath)
+        filenames = os.listdir(our_path +  "/" +self.filedir)
 
         highest_count = -1
         for filename in filenames:
@@ -82,7 +82,7 @@ class BatchGameRunner:
             log_file.write("#Metadata:\n")
             log_file.write("#Timestamp: " + timestamp + '\n')
             log_file.write("#Game name: " + self.game_name + '\n')
-            log_file.write("#No. runs:  " + self.runs + '\n')
+            log_file.write("#No. runs:  " + str(self.runs) + '\n')
             log_file.write("#Total runtime:  000000000000" + '\n') ########################TODO
             log_file.write("#Start clock: " + self.start_clock + '\n')
             log_file.write("#Play clock: " + self.play_clock + '\n')
@@ -103,7 +103,7 @@ class BatchGameRunner:
             log_file.write(winner + ',')
             log_file.write(p1_data +  ',')
             log_file.write(p2_data + ',')
-            log_file.write(move_count + '\n')
+            log_file.write(str(move_count) + '\n')
 
     #Get final rewards for each player and total move count from json string
     def get_server_json(self, remove_file = True):
