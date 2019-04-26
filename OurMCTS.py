@@ -1,6 +1,8 @@
 import random
 import time
 import math
+import datetime
+import csv
 
 from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
@@ -81,6 +83,11 @@ class MCTSPlayer(MatchPlayer):
     ucb_constant = 1.414
     #Maximum iterations per game, -1 means no limit
     max_iterations = 10000
+
+    csv_log_file = "PlayerLog.csv"
+    iteration_count_list = []
+    time_list = []
+    sarsa_iterations = 0
 
     #TODO: use this instead of allocating new states/moves in phases
     current_move = None
@@ -304,6 +311,7 @@ class MCTSPlayer(MatchPlayer):
         print "****************************************************"
         print "CLEANING"
         print "****************************************************"
+        self.log_to_csv()
         if self.root is not None:
             tree_cleanup(self.root)
             self.root = None
@@ -316,3 +324,20 @@ class MCTSPlayer(MatchPlayer):
         if self.sm is not None:
             interface.dealloc_statemachine(self.sm)
             self.sm = None
+
+    def log_to_csv(self):
+    #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
+    # <List with number of expansions per state> <List with time taken per state>
+
+        with open(self.csv_log_file, 'w+') as log_file:
+            log_file.write(str(self.sarsa_iterations))
+            log_file.write(',')
+            for i, item in enumerate(self.iteration_count_list):
+                if i != 0:
+                    log_file.write(';')
+                log_file.write(str(item))
+            log_file.write(',')
+            for i, item in enumerate(self.time_list):
+                if i != 0:
+                    log_file.write(';')
+                log_file.write(str(item))
