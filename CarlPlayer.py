@@ -352,7 +352,7 @@ class CarlPlayer(MatchPlayer):
         
         self.iteration_count_list.append(runs)
         self.time_list.append(time.time() - start_time)
-
+        
         return self.choose()
 
     #Search tree memory dealloc
@@ -360,6 +360,9 @@ class CarlPlayer(MatchPlayer):
         print "****************************************************"
         print "CLEANING"
         print "****************************************************"
+
+        log_to_csv()
+        
         if self.master_root is not None:
             tree_cleanup(self.master_root)
             self.master_root = None
