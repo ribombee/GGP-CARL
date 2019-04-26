@@ -32,7 +32,7 @@ def main():
     port = int(sys.argv[2])
 
     player = None
-    if player_name.lower() == "Sarsa":
+    if player_name.lower() == "sarsa":
         player = SarsaPlayer("sarsa")
     elif player_name.lower() == "carl":
         player = CarlPlayer("Carl")
