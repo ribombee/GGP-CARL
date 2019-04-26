@@ -378,8 +378,7 @@ class CarlPlayer(MatchPlayer):
         #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
         # <List with number of expansions per state> <List with time taken per state>
 
-        with open(self.csv_log_file, 'w') as csv_file:
-            log_file = csv.writer(csv_file, delimiter='')
+        with open(self.csv_log_file, 'w+') as log_file:
             log_file.write(self.sarsa_iterations)
             log_file.write(',')
             for i, item in enumerate(self.iteration_count_list):

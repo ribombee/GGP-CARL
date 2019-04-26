@@ -78,34 +78,32 @@ class BatchGameRunner:
     def write_metadata(self):
         ts = time.time()
         timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-        with open(self.filedir + self.filepath, 'w') as log_file:
-            filewriter = csv.writer(log_file, delimiter=',')
-            filewriter.write("#Metadata:\n")
-            filewriter.write("#Timestamp: " + timestamp + '\n')
-            filewriter.write("#Game name: " + self.game_name + '\n')
-            filewriter.write("#No. runs:  " + self.runs + '\n')
-            filewriter.write("#Total runtime:  000000000000" + '\n') ########################TODO
-            filewriter.write("#Start clock: " + self.start_clock + '\n')
-            filewriter.write("#Play clock: " + self.play_clock + '\n')
+        with open(self.filepath, 'a') as log_file:
+            log_file.write("#Metadata:\n")
+            log_file.write("#Timestamp: " + timestamp + '\n')
+            log_file.write("#Game name: " + self.game_name + '\n')
+            log_file.write("#No. runs:  " + self.runs + '\n')
+            log_file.write("#Total runtime:  000000000000" + '\n') ########################TODO
+            log_file.write("#Start clock: " + self.start_clock + '\n')
+            log_file.write("#Play clock: " + self.play_clock + '\n')
             
     def write_game(self):
-            goals, move_count = self.get_server_json(True)
-            winner = ""
+        goals, move_count = self.get_server_json(True)
+        winner = ""
 
-            if goals[0] > goals[1]:
-                winner = "Player 1"
-            else:
-                winner = "Player 2"
+        if goals[0] > goals[1]:
+            winner = "Player 1"
+        else:
+            winner = "Player 2"
 
-            p1_data = self.player1_client.command("cat ~/Documents/CarlAgent/GGP-Carl/PlayerLog.csv")
-            p2_data = self.player2_client.command("cat ~/Documents/CarlAgent/GGP-Carl/PlayerLog.csv")
+        p1_data = self.player1_client.command("cat ~/Documents/CarlAgent/GGP-Carl/PlayerLog.csv")
+        p2_data = self.player2_client.command("cat ~/Documents/CarlAgent/GGP-Carl/PlayerLog.csv")
 
-            with open(self.filepath, 'w') as log_file:
-                filewriter = csv.writer(log_file, delimiter=',')
-                log_file.write(winner)
-                log_file.write(p1_data)
-                log_file.write(p2_data)
-                log_file.write(move_count)
+        with open(self.filepath, 'a') as log_file:
+            log_file.write(winner + ',')
+            log_file.write(p1_data +  ',')
+            log_file.write(p2_data + ',')
+            log_file.write(move_count + '\n')
 
     #Get final rewards for each player and total move count from json string
     def get_server_json(self, remove_file = True):
@@ -141,5 +139,5 @@ class BatchGameRunner:
 if __name__ == "__main__":
     gameRunner = BatchGameRunner()
     gameRunner.setup()
-    gameRunner.get_server_json()
+    gameRunner.run_tests()
     

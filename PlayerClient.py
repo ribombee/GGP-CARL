@@ -32,7 +32,7 @@ class PlayerClient(Client):
 
 	def start_player(self, player_type, port = 1337):
 		self.shell_send('cd ~/Documents/CarlAgent/GGP-CARL')
-		self.shell_send('python play.py ' + player_type + ' ' + port)
+		self.shell_send('python play.py ' + player_type + ' ' + str(port))
 
 	def stop_player(self):
 		self.shell_send(chr(3), False)
