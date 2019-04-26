@@ -361,8 +361,8 @@ class CarlPlayer(MatchPlayer):
         print "CLEANING"
         print "****************************************************"
 
-        log_to_csv()
-        
+        self.log_to_csv()
+
         if self.master_root is not None:
             tree_cleanup(self.master_root)
             self.master_root = None
