@@ -13,10 +13,10 @@ class Client:
 		self.channel = self.ssh.invoke_shell()
 		self.buff = self.channel.recv(1024)
 
-	def shell_receive(self):
+	def shell_receive(self, buffer_size = 1024):
 		while not self.channel.recv_ready():
 			time.sleep(0.1)
-		self.buff = self.channel.recv(1024)
+		self.buff = self.channel.recv(buffer_size)
 		return self.buff
 
 	def shell_send(self, message, new_line = True):
