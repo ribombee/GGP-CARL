@@ -97,7 +97,9 @@ class BatchGameRunner:
             winner = "Player 2"
 
         p1_data = self.player1_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        p1_data.replace('\n', '')
         p2_data = self.player2_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        p2_data.replace('\n', '')
 
         with open(self.filepath, 'a') as log_file:
             log_file.write(winner + ',')
