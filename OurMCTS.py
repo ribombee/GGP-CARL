@@ -300,13 +300,14 @@ class MCTSPlayer(MatchPlayer):
 
     #Searches the tree until finish_time (according to SARSA policy), then returns a move.
     def on_next_move(self, finish_time):
+        start_time = time.time()
         self.sm.update_bases(self.match.get_current_state())
         runs = self.perform_mcts(finish_time)
         print "Managed ",  runs, "playouts."
         
         self.iteration_count_list.append(runs)
         self.time_list.append(time.time() - start_time)
-        
+
         return self.choose()
 
     #Search tree memory dealloc
