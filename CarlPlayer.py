@@ -393,4 +393,3 @@ class CarlPlayer(MatchPlayer):
                 if i != 0:
                     log_file.write(';')
                 log_file.write(str(item))
-            log_file.write('\n')
