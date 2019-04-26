@@ -1,6 +1,8 @@
 import random
 import time
+import datetime
 import math
+import csv
 
 from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
@@ -79,6 +81,10 @@ class CarlPlayer(MatchPlayer):
 
     ucb_constant = 1.414
     max_iterations = 10000
+    csv_log_file = "PlayerLog.csv"
+    iteration_count_list = []
+    time_list = []
+    sarsa_iterations = 0
 
     current_move = None
     current_state = None
@@ -92,6 +98,7 @@ class CarlPlayer(MatchPlayer):
     def get_move_name(self, role, move):
         return self.match.game_info.model.actions[role][move]
 
+    #Print which move each player chose
     def print_joint_move(self,joint_move):
         for role_index in range(self.role_count):
             print "Player no.", role_index, " chose ", self.get_move_name(role_index, joint_move.get(role_index))
@@ -334,13 +341,18 @@ class CarlPlayer(MatchPlayer):
 
         self.role_count = len(self.sm.get_roles())
 
-        self.perform_sarsa(finish_time)
+        self.sarsa_iterations = self.perform_sarsa(finish_time)
 
     def on_next_move(self, finish_time):
+
+        start_time = time.time()
         self.sm.update_bases(self.match.get_current_state())
         runs = self.perform_mcts(finish_time)
         print "Managed ",  runs, "playouts."
         
+        self.iteration_count_list.append(runs)
+        self.time_list.append(time.time() - start_time)
+
         return self.choose()
 
     #Search tree memory dealloc
@@ -361,3 +373,22 @@ class CarlPlayer(MatchPlayer):
         if self.sm is not None:
             interface.dealloc_statemachine(self.sm)
             self.sm = None
+
+    def log_to_csv(self):
+        #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
+        # <List with number of expansions per state> <List with time taken per state>
+
+        with open(self.csv_log_file, 'w') as csv_file:
+            log_file = csv.writer(csv_file, delimiter='')
+            log_file.write(self.sarsa_iterations)
+            log_file.write(',')
+            for i, item in enumerate(self.iteration_count_list):
+                if i != 0:
+                    log_file.write(';')
+                log_file.write(item)
+            log_file.write(',')
+            for i, item in enumerate(self.time_list):
+                if i != 0:
+                    log_file.write(';')
+                log_file.write(item)
+            log_file.write('\n')
