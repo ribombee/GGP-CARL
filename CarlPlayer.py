@@ -382,15 +382,15 @@ class CarlPlayer(MatchPlayer):
         # <List with number of expansions per state> <List with time taken per state>
 
         with open(self.csv_log_file, 'w+') as log_file:
-            log_file.write(self.sarsa_iterations)
+            log_file.write(str(self.sarsa_iterations))
             log_file.write(',')
             for i, item in enumerate(self.iteration_count_list):
                 if i != 0:
                     log_file.write(';')
-                log_file.write(item)
+                log_file.write(str(item))
             log_file.write(',')
             for i, item in enumerate(self.time_list):
                 if i != 0:
                     log_file.write(';')
-                log_file.write(item)
+                log_file.write(str(item))
             log_file.write('\n')
