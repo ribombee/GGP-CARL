@@ -41,7 +41,7 @@ def main():
     elif player_name.lower() == "carl_full":
         player = CarlPlayer("sucb", "sarsa", "Carl with SARSA in selection and playout", 10)
     elif player_name.lower() == "mcts":
-        player = MCTSPlayer("ucb", "random", "MCTS")
+        player = CarlPlayer("ucb", "random", "MCTS")
     elif player_name.lower() == "random":
         player = RandomPlayer("Random")
     else:

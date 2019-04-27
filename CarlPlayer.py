@@ -301,9 +301,9 @@ class CarlPlayer(MatchPlayer):
             self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
             
         if self.playout_policy_type == "sarsa":
-            self.playout_policy = CarlPlayer.SarsaPlayoutPolicy(self.role_count, self.sarsa_agent)
+            self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsa_agent)
         else:
-            self.playout_policy = CarlPlayer.RandomPolicy(self.role_count)
+            self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
     def on_next_move(self, finish_time):
 
