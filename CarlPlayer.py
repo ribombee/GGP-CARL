@@ -15,7 +15,7 @@ import CarlUtils
 from CarlUtils import Action, Node, tree_cleanup, hash_joint_move
 
 class CarlPlayer(MatchPlayer):
-    sarsaAgents = {}
+    sarsa_agents = {}
     role_count = 0
     role = 0
     sm = None
@@ -75,13 +75,13 @@ class CarlPlayer(MatchPlayer):
 
                 #Choose moves for all players.
                 for role_index in range(self.role_count):
-                    choice = self.sarsaAgents[role_index].policy_training(self.current_state, self.sm.get_legal_state(role_index))
+                    choice = self.sarsa_agents[role_index].policy_training(self.current_state, self.sm.get_legal_state(role_index))
                     self.current_move.set(role_index, choice)
 
                 if not init:
                     #update all agents with bootstrapping
                     for role_index in range(self.role_count):
-                        self.sarsaAgents[role_index].observe(self.last_state, self.last_move.get(role_index), state_prime=self.current_state, action_prime=self.current_move.get(role_index))
+                        self.sarsa_agents[role_index].observe(self.last_state, self.last_move.get(role_index), state_prime=self.current_state, action_prime=self.current_move.get(role_index))
                 else:
                      init = False
 
@@ -99,7 +99,7 @@ class CarlPlayer(MatchPlayer):
             
             #update all agents with end reward
             for role_index in range(self.role_count):
-                self.sarsaAgents[role_index].observe(self.last_state, self.last_move.get(role_index), reward=self.sm.get_goal_value(role_index))
+                self.sarsa_agents[role_index].observe(self.last_state, self.last_move.get(role_index), reward=self.sm.get_goal_value(role_index))
 
             playout_count += 1
         return playout_count
@@ -273,7 +273,7 @@ class CarlPlayer(MatchPlayer):
         self.role = match.our_role_index
         self.role_count = len(match.sm.get_roles())
         for role_index in range(self.role_count):
-            self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
+            self.sarsa_agents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
             #self.sarsaAgents[role_index] = SarsaTabular()
 
         self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, 2)
