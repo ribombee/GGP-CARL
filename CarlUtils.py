@@ -100,12 +100,12 @@ class SarsaSelectionPolicy(Policy):
         for action_index in current_node.actions[role_index]:
             # TODO BABY self.ucb(current_node, current_node.actions[role][action_index])
             action = current_node.actions[role_index][action_index]
+            current_sucb = 0 
             if action.N < self.sucb_threshold:
                 #What is the range of this? 0-100? yes?
                 current_sucb = self.sarsa_agents[role_index].nondet_policy(sm.get_legal_state(role_index))
             else:
                 current_sucb = ucb(current_node, action.Q, action.N)
-            current_sucb = 0 
             if current_sucb > best_sucb:
                 best_sucb = current_sucb
                 best_action = action_index
@@ -130,7 +130,6 @@ class SarsaPlayoutPolicy(Policy):
         self.sarsa_agents = sarsa_agents
 
     def choose(self, current_move, sm, current_state = None, current_node = None):
-        
         for role_index in range(self.role_count):
             choice = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
             current_move.set(role_index, choice)
@@ -146,8 +145,7 @@ class UCTSelectionPolicy(Policy):
         for action_index in current_node.actions[role_index]:
             # TODO BABY self.ucb(current_node, current_node.actions[role][action_index])
             action = current_node.actions[role_index][action_index]
-            ucb(current_node, action.Q, action.N)
-            current_sucb = 0 
+            current_sucb = ucb(current_node, action.Q, action.N)
             if current_sucb > best_sucb:
                 best_sucb = current_sucb
                 best_action = action_index
