@@ -295,14 +295,20 @@ class CarlPlayer(MatchPlayer):
 
         self.sarsa_iterations = self.perform_sarsa(finish_time)
 
-        if self.selection_policy_type == "subc":
+        if self.selection_policy_type == "sucb":
             self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, self.sucb_threshold)
+        elif self.selection_policy_type == "ucb":
+            self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
         else:
+            print("Invalid selection policy provided, defaulting to UCB.")
             self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
             
         if self.playout_policy_type == "sarsa":
             self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsa_agent)
+        elif self.playout_policy_type == "random":
+            self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
         else:
+            print("Invalid playout policy provided, defaulting to random.")
             self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
     def on_next_move(self, finish_time):
