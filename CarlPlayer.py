@@ -142,7 +142,7 @@ class CarlPlayer(MatchPlayer):
         while (current_node is not None) and (not self.sm.is_terminal()):
             next_move = self.sm.get_joint_move()
 
-            self.selection_policy.choose(next_move, self.sm, current_node=current_node)
+            self.selection_policy.choose(next_move, self.sm, current_node=current_node, current_state = current_state)
             
             last_node = current_node
             
@@ -276,8 +276,8 @@ class CarlPlayer(MatchPlayer):
             self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
             #self.sarsaAgents[role_index] = SarsaTabular()
 
-        self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
-        self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsaAgents)
+        self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, 2)
+        self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
         self.match = match
 

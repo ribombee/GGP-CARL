@@ -93,7 +93,7 @@ class SarsaSelectionPolicy(Policy):
         self.sarsa_agents = sarsa_agents
         self.sucb_threshold = sucb_threshold
 
-    def find_action(self, current_node, sm, role_index):
+    def find_action(self, current_node, current_state, sm, role_index):
         best_action = -1
         best_sucb = -float("inf")
 
@@ -103,7 +103,7 @@ class SarsaSelectionPolicy(Policy):
             current_sucb = 0 
             if action.N < self.sucb_threshold:
                 #What is the range of this? 0-100? yes?
-                current_sucb = self.sarsa_agents[role_index].nondet_policy(sm.get_legal_state(role_index))
+                current_sucb = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
             else:
                 current_sucb = ucb(current_node, action.Q, action.N)
             if current_sucb > best_sucb:
@@ -114,7 +114,7 @@ class SarsaSelectionPolicy(Policy):
 
     def choose(self, current_move, sm, current_state = None, current_node = None):
         for role_index in range(self.role_count):
-            current_move.set(role_index, self.find_action(current_node, sm, role_index))
+            current_move.set(role_index, self.find_action(current_node, current_state, sm, role_index))
 
 
 class SarsaPlayoutPolicy(Policy):
