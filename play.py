@@ -34,10 +34,14 @@ def main():
     player = None
     if player_name.lower() == "sarsa":
         player = SarsaPlayer("sarsa")
-    elif player_name.lower() == "carl":
-        player = CarlPlayer("Carl")
+    elif player_name.lower() == "carl_playout":
+        player = CarlPlayer("ucb", "sarsa", "Carl with SARSA in playout")
+    elif player_name.lower() == "carl_selection":
+        player = CarlPlayer("sucb", "random", "Carl with SARSA in selection", 10)
+    elif player_name.lower() == "carl_full":
+        player = CarlPlayer("sucb", "sarsa", "Carl with SARSA in selection and playout", 10)
     elif player_name.lower() == "mcts":
-        player = MCTSPlayer("MCTS test")
+        player = MCTSPlayer("ucb", "random", "MCTS")
     elif player_name.lower() == "random":
         player = RandomPlayer("Random")
     else:

@@ -27,6 +27,7 @@ class CarlPlayer(MatchPlayer):
     iteration_count_list = []
     time_list = []
     sarsa_iterations = 0
+    subc_threshold = 2
 
     current_move = None
     current_state = None
@@ -266,8 +267,11 @@ class CarlPlayer(MatchPlayer):
 
     #----GGPLIB
 
-    def __init__(self, name=None):
+    def __init__(self, selection_policy_type, playout_policy_type, name=None, sucb_threshold = 0):
         super(CarlPlayer, self).__init__(name)
+        self.selection_policy_type = selection_policy_type
+        self.playout_policy_type = playout_policy_type
+        self.sucb_threshold = sucb_threshold
 
     def reset(self, match):
         self.role = match.our_role_index
@@ -276,7 +280,7 @@ class CarlPlayer(MatchPlayer):
             self.sarsa_agents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
             #self.sarsaAgents[role_index] = SarsaTabular()
 
-        self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, 2)
+        
         self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
         self.match = match
@@ -290,6 +294,16 @@ class CarlPlayer(MatchPlayer):
         self.last_state = self.sm.new_base_state()
 
         self.sarsa_iterations = self.perform_sarsa(finish_time)
+
+        if self.selection_policy_type == "subc":
+            self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, self.sucb_threshold)
+        else:
+            self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
+            
+        if self.playout_policy_type == "sarsa":
+            self.playout_policy = CarlPlayer.SarsaPlayoutPolicy(self.role_count, self.sarsa_agent)
+        else:
+            self.playout_policy = CarlPlayer.RandomPolicy(self.role_count)
 
     def on_next_move(self, finish_time):
 

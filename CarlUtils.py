@@ -98,12 +98,12 @@ class SarsaSelectionPolicy(Policy):
         best_sucb = -float("inf")
 
         for action_index in current_node.actions[role_index]:
-            # TODO BABY self.ucb(current_node, current_node.actions[role][action_index])
             action = current_node.actions[role_index][action_index]
             current_sucb = 0 
             if action.N < self.sucb_threshold:
                 #What is the range of this? 0-100? yes?
-                current_sucb = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
+                val = self.sarsa_agents[role_index].value(current_state, action_index)
+                current_sucb = ucb(current_node, val, action.N)
             else:
                 current_sucb = ucb(current_node, action.Q, action.N)
             if current_sucb > best_sucb:
