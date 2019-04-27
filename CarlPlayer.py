@@ -11,66 +11,8 @@ from ggplib.player.mcs import MoveStat
 #from ggplib.util import log
 from ggplib.player.base import MatchPlayer
 from ggplib import interface
-
-#Helper function for hashing joint moves to use as index for dictionary
-def hash_joint_move(role_count, joint_move):
-    joint_move_list = []
-    for role_index in range(role_count):
-        joint_move_list.append(joint_move.get(role_index))
-    return hash(str(joint_move_list))
-
-def tree_cleanup(node):
-    if node is not None:
-        if node.parent_move is not None:
-            interface.dealloc_jointmove(node.parent_move)
-        node.parent_move = None
-        node.actions = None
-        for child_index in node.children: 
-            tree_cleanup(node.children[child_index])
-        node.children = None
-
-#Node for MCTS search tree
-class Node():
-    #Get child node from joint move
-    def getChild(self, joint_move, role_count):
-        hash_key = hash_joint_move(role_count, joint_move)
-        if hash_key in self.children:
-            return self.children[hash_key]
-        else:
-            return None
-
-    def __init__(self, parent = None, parent_move = None):
-        #The parent of this node  
-        #If the parent is null, this node is the root of the tree.
-        self.parent = parent
-
-        #The move taken from parent to reach this node
-        self.parent_move = parent_move
-
-        #The number of time this node has been visited.
-        self.N = 0
-
-        #List of possible actions per player.
-        self.actions = [{}]
-
-        #TODO: reconsider having children as dict?
-        #Children nodes of the current node, indexed by hashed joint move.
-        self.children = {}
-            
-#Action that a role can take from a node.
-#There are multiple actions per role per node
-class Action():
-
-    def __init__(self, move, N = 0, Q = -1):
-        #Integer that represents the action's move according
-        self.move = move
-        
-        #Number of time this role has taken this action
-        self.N = N
-        
-        #Q value for this action for this role
-        self.Q = Q
-
+import CarlUtils
+from CarlUtils import Action, Node, tree_cleanup, hash_joint_move
 
 class CarlPlayer(MatchPlayer):
     sarsaAgents = {}
@@ -92,6 +34,9 @@ class CarlPlayer(MatchPlayer):
     last_state = None
     
     root = None
+
+    selection_policy = None
+    playout_policy = None
 
     #----Helper functions
 
@@ -195,7 +140,10 @@ class CarlPlayer(MatchPlayer):
         next_move = None
 
         while (current_node is not None) and (not self.sm.is_terminal()):
-            next_move = self.select_joint_move(current_node)
+            next_move = self.sm.get_joint_move()
+
+            self.selection_policy.choose(next_move, self.sm, current_node=current_node)
+            
             last_node = current_node
             
             current_node = current_node.getChild(next_move, self.role_count)
@@ -246,10 +194,11 @@ class CarlPlayer(MatchPlayer):
 
             current_state = self.sm.get_current_state(current_state)
 
+            self.playout_policy.choose(current_move, self.sm, current_state = current_state)
             #Choose moves for all players.
-            for role_index in range(self.role_count):
-                choice = self.sarsaAgents[role_index].nondet_policy(current_state, self.sm.get_legal_state(role_index))
-                current_move.set(role_index, choice)
+            #for role_index in range(self.role_count):
+            #    choice = self.sarsaAgents[role_index].nondet_policy(current_state, self.sm.get_legal_state(role_index))
+            #    current_move.set(role_index, choice)
 
             #Update state + state machine
             self.sm.next_state(current_move, current_state)
@@ -321,13 +270,14 @@ class CarlPlayer(MatchPlayer):
         super(CarlPlayer, self).__init__(name)
 
     def reset(self, match):
-        #Keep the estimator from previous game if the next game is the same
-        if not self.match or not self.match.game_info.game == match.game_info.game:
-            self.role = match.our_role_index
-            role_count = len(match.sm.get_roles())
-            for role_index in range(role_count):
-                self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
-                #self.sarsaAgents[role_index] = SarsaTabular()
+        self.role = match.our_role_index
+        self.role_count = len(match.sm.get_roles())
+        for role_index in range(self.role_count):
+            self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
+            #self.sarsaAgents[role_index] = SarsaTabular()
+
+        self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
+        self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsaAgents)
 
         self.match = match
 
@@ -338,8 +288,6 @@ class CarlPlayer(MatchPlayer):
         self.current_state = self.sm.new_base_state()
         self.last_move = self.sm.get_joint_move()
         self.last_state = self.sm.new_base_state()
-
-        self.role_count = len(self.sm.get_roles())
 
         self.sarsa_iterations = self.perform_sarsa(finish_time)
 

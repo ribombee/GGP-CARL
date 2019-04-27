@@ -202,7 +202,7 @@ class MCTSPlayer(MatchPlayer):
 
             current_state = self.sm.get_current_state(current_state)
 
-            #Rdomly assign move for each player
+            #Randomly assign move for each player
             for role_index in range(self.role_count):
                 ls = self.sm.get_legal_state(role_index)
                 choice = ls.get_legal(random.randrange(0, ls.get_count()))
