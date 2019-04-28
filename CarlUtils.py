@@ -107,7 +107,7 @@ class SarsaSelectionPolicy(Policy):
                 #current_sucb = ucb(current_node, val, action.N)
 
 
-                best_action = self.sarsa_agents[role_index].nondet_policy(current_state, , sm.get_legal_state(role_index))
+                best_action = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
                 break
             else:
                 current_sucb = ucb(current_node, action.Q, action.N)
