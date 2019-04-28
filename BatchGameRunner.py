@@ -1,7 +1,7 @@
 #This will run a batch of the following command:
 #./gameServerRunner <results directory> <game key> <start clock> <play clock> <player host 1> <player port 1> <player name 1> <player host 2> <player port 2> <player name 2> etc.
 
-import subprocess, os, sys, time, datetime, csv, json, FileInput
+import subprocess, os, sys, time, datetime, csv, json, fileinput
 from PlayerClient import PlayerClient
 
 class BatchGameRunner:
@@ -91,8 +91,8 @@ class BatchGameRunner:
             log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
 
     def update_total_runtime(self):
-        time_now = str(time.time() - self.time_Start)
-        file = fileinput.FileInput(self.filepath, inplace=True, backup='.bak')
+        time_now = str(time.time() - self.time_start)
+        file = fileinput.FileInput(self.filepath, inplace=True)
         
         for line in file:
             if '#Total runtime: ' in line:
