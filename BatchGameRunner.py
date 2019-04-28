@@ -1,7 +1,7 @@
 #This will run a batch of the following command:
 #./gameServerRunner <results directory> <game key> <start clock> <play clock> <player host 1> <player port 1> <player name 1> <player host 2> <player port 2> <player name 2> etc.
 
-import subprocess, os, sys, time, datetime, csv, json
+import subprocess, os, sys, time, datetime, csv, json, FileInput
 from PlayerClient import PlayerClient
 
 class BatchGameRunner:
@@ -84,12 +84,22 @@ class BatchGameRunner:
             log_file.write("#Game name: " + self.game_name + '\n')
             log_file.write("#Player 1: " + self.player1_type + '\n')
             log_file.write("#Player 2: " + self.player2_type + '\n')
-            log_file.write("#No. runs:  " + str(self.runs) + '\n')
-            log_file.write("#Total runtime:  000000000000" + '\n') ########################TODO
+            log_file.write("#No. runs: " + str(self.runs) + '\n')
+            log_file.write("#Total runtime: N/A" + '\n') 
             log_file.write("#Start clock: " + self.start_clock + '\n')
             log_file.write("#Play clock: " + self.play_clock + '\n')
             log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
-            
+
+    def update_total_runtime(self):
+        time_now = str(time.time() - self.time_Start)
+        file = fileinput.FileInput(self.filepath, inplace=True, backup='.bak')
+        
+        for line in file:
+            if '#Total runtime: ' in line:
+                sys.stdout.write('#Total runtime: ' + time_now + '\n')
+            else:
+                sys.stdout.write(line)
+
     def write_game(self):
         goals, move_count = self.get_server_json(True)
         winner = ""
@@ -130,6 +140,7 @@ class BatchGameRunner:
 
     def run_tests(self):
         self.write_metadata()
+        self.time_start = time.time()
 
         for iteration in range(self.runs):
             process = subprocess.Popen(self.command, cwd=self.ggp_base_path, shell=True)
@@ -138,7 +149,8 @@ class BatchGameRunner:
             self.write_game()
 
             print "Run #" + str(iteration+1) +" finished!"
-        
+            self.update_total_runtime()
+
         print "Batch run finished."
 
 if __name__ == "__main__":
