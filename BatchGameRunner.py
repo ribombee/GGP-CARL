@@ -88,7 +88,7 @@ class BatchGameRunner:
             log_file.write("#Total runtime:  000000000000" + '\n') ########################TODO
             log_file.write("#Start clock: " + self.start_clock + '\n')
             log_file.write("#Play clock: " + self.play_clock + '\n')
-            log_file.write("#Winner | Player 1 sarsa iterations| Player 1 list of iterations per state | Player 1 list of time taken per state | Player 2 sarsa iterations | Player 2 list of iterations per state | Player 2 time taken per state | Number of moves made" + '\n')
+            log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
             
     def write_game(self):
         goals, move_count = self.get_server_json(True)
