@@ -304,7 +304,7 @@ class CarlPlayer(MatchPlayer):
             self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
             
         if self.playout_policy_type == "sarsa":
-            self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsa_agent)
+            self.playout_policy = CarlUtils.SarsaPlayoutPolicy(self.role_count, self.sarsa_agents)
         elif self.playout_policy_type == "random":
             self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
         else:
@@ -318,7 +318,7 @@ class CarlPlayer(MatchPlayer):
         runs = self.perform_mcts(finish_time)
         print "Managed ",  runs, "playouts."
         
-        self.iteration_count_list.append(runs)
+        self.iteration_count_li st.append(runs)
         self.time_list.append(time.time() - start_time)
         
         return self.choose()

@@ -100,6 +100,15 @@ class BatchGameRunner:
             else:
                 sys.stdout.write(line)
 
+    def process_player_data(self, data_string):
+        if isinstance(data_string, str):
+            data_string.replace('\n', '')
+            data_list = data_string.split(',')
+            return data_list[0] + "," + data_list[1] + "," + data_list[2]
+        else:
+            return ",,"
+        
+             
     def write_game(self):
         goals, move_count = self.get_server_json(True)
         winner = ""
@@ -110,15 +119,16 @@ class BatchGameRunner:
             winner = "Player 2"
 
         p1_data = self.player1_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
-        p1_data.replace('\n', '')
         p2_data = self.player2_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
-        p2_data.replace('\n', '')
 
         with open(self.filepath, 'a') as log_file:
             log_file.write(winner + ',')
-            log_file.write(p1_data +  ',')
-            log_file.write(p2_data + ',')
+            log_file.write(self.process_player_data(p1_data) +  ',')
+            log_file.write(self.process_player_data(p2_data) +  ',')
             log_file.write(str(move_count) + '\n')
+
+        self.player1_client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        self.player2_client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
 
     #Get final rewards for each player and total move count from json string
     def get_server_json(self, remove_file = True):
