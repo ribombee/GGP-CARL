@@ -20,7 +20,10 @@ class Client:
 		return self.buff
 
 	def shell_send(self, message, new_line = True):
-		self.channel.send(message + "\n")
+		command = message
+		if new_line:
+			command += "\n"
+		self.channel.send(message)
 
 	def command(self, message):
 		stdin, stdout, stderr = self.ssh.exec_command(message)
