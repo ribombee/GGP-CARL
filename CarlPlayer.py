@@ -129,7 +129,7 @@ class CarlPlayer(MatchPlayer):
         next_move = self.sm.get_joint_move()
 
         while current_node is not None and len(current_node.actions) is not 0:
-            self.selection_policy.choose(next_move, self.sm, current_node=current_node)
+            self.selection_policy.choose(next_move, self.sm, current_node=current_node, current_state=current_node.state)
             
             last_node = current_node
             
