@@ -3,6 +3,7 @@ from Sarsa import SarsaEstimator
 from Sarsa import SarsaTabular
 import time
 from sklearn.linear_model import SGDRegressor
+from sklearn.neural_network import MLPRegressor
 
 from ggplib.player.base import MatchPlayer
 
@@ -19,6 +20,7 @@ class SarsaPlayer(MatchPlayer):
             role_count = len(match.sm.get_roles())
             for role_index in range(role_count):
                 self.sarsaAgents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
+                #self.sarsaAgents[role_index] = SarsaEstimator(MLPRegressor(hidden_layer_sizes=(100,40,100)), len(match.game_info.model.actions[role_index]))
                 #self.sarsaAgents[role_index] = SarsaTabular()
 
         self.match = match

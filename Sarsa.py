@@ -18,39 +18,30 @@ class SarsaEstimator:
         #TODO: check to make sure that more than 1 is needed
         self.temp_list = [[],[]]
         self.offset = 0
-
-    def populateTempList(self, state, action):
-        self.offset = (self.offset + 1) % 2
-        if len(self.temp_list[self.offset]) == 0:
-            self.temp_list[self.offset] = state.to_list()
-            action_list = [0]*self.possible_action_count
-            action_list[action] = 1
-            self.temp_list[self.offset] = self.temp_list[self.offset] + action_list
-            self.temp_list[self.offset] = [self.temp_list[self.offset]]
-        elif state is not None:
-            for ind in range(state.len()):
-                self.temp_list[self.offset][0][ind] = state.get(ind)
-            for ind in range(state.len(), state.len()+self.possible_action_count):
-                if ind - state.len() == action:
-                    self.temp_list[self.offset][0][ind] = 1
-                else:
-                    self.temp_list[self.offset][0][ind] = 0
-        return self.temp_list[self.offset]
-
+    
+    def encode_state_action(self, state, action):
+        state_list = state.to_list()
+        processed_list = state_list + [0]*self.possible_action_count
+        index = len(state_list) + action
+        processed_list[index] = 1
+        return [processed_list]
+    
     def value(self, state, action):
         try:
-            lis = self.populateTempList(state, action)
-            return self.estimator.predict(lis)
+            lis = self.encode_state_action(state, action)
+            return self.estimator.predict(lis)*100.0
         except NotFittedError:
-            return 0
+            return 50
         
     def observe(self, state, action, reward=None, state_prime=None, action_prime=None):
-        lis = self.populateTempList(state, action)
+        lis = self.encode_state_action(state, action)
+
         if reward is not None:
-            #TODO: fix reward system
-            self.estimator.partial_fit(lis, [self.discount_factor*(reward-50)])
+            reward = reward/100.0
+            self.estimator.partial_fit(lis, [self.discount_factor*reward])
         elif state_prime is not None and action_prime is not None:
-            self.estimator.partial_fit(lis, [self.discount_factor*self.value(state_prime, action_prime)])
+            prime_value = self.value(state_prime, action_prime)/100.0
+            self.estimator.partial_fit(lis, [self.discount_factor*prime_value])
         else:
             raise ValueError("A reward or derived state + action must be given")
 
@@ -95,27 +86,27 @@ class SarsaTabular:
         self.learning_rate = learning_rate
         self.Q = {}
 
-    def stateActionToKey(self, state, action):
+    def state_action_to_key(self, state, action):
         temp_list = state.to_list()
         temp_list.append(action)
         keyStr = str(temp_list)
         return hash(keyStr)
 
     def value(self, state, action):
-        key = self.stateActionToKey(state, action)
+        key = self.state_action_to_key(state, action)
         if not key in self.Q:
-            self.Q[key] = 0.0
+            self.Q[key] = 50.0
 
         return self.Q[key]
 
     def observe(self, state, action, reward=None, state_prime=None, action_prime=None):
-        key = self.stateActionToKey(state, action)
+        key = self.state_action_to_key(state, action)
         
         if not key in self.Q:
-            self.Q[key] = 0.0
+            self.Q[key] = 50.0
 
         if reward is not None:
-            self.Q[key] = self.Q[key] + self.learning_rate*((reward-50) - self.Q[key])
+            self.Q[key] = self.Q[key] + self.learning_rate*(reward - self.Q[key])
         elif state_prime is not None and action_prime is not None:
             self.Q[key] = self.Q[key] + self.learning_rate*(self.discount_factor * self.value(state_prime, action_prime) - self.Q[key])
         else:

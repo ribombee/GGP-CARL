@@ -42,7 +42,8 @@ class Node():
         else:
             return None
 
-    def __init__(self, parent = None, parent_move = None):
+    def __init__(self, state, parent = None, parent_move = None):
+        self.state = state
         #The parent of this node  
         #If the parent is null, this node is the root of the tree.
         self.parent = parent
@@ -54,7 +55,7 @@ class Node():
         self.N = 0
 
         #List of possible actions per player.
-        self.actions = [{}]
+        self.actions = []
 
         #TODO: reconsider having children as dict?
         #Children nodes of the current node, indexed by hashed joint move.
@@ -97,18 +98,15 @@ class SarsaSelectionPolicy(Policy):
         best_action = -1
         best_sucb = -float("inf")
 
-        if current_node.N < self.sucb_threshold:
-            best_action = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
-        else:
-            for action_index in current_node.actions[role_index]:
-                action = current_node.actions[role_index][action_index]
-                current_sucb = 0 
-                #if action.N < self.sucb_threshold:
-                    #What is the range of this? 0-100? yes?
-                    #TODO: find out how to use sarsa values in ucb (they are very low)
-                    #val = self.sarsa_agents[role_index].value(current_state, action_index)
-                    #current_sucb = ucb(current_node, val, action.N)
-                
+        for action_index in current_node.actions[role_index]:
+            action = current_node.actions[role_index][action_index]
+            current_sucb = 0 
+            if action.N < self.sucb_threshold:
+                #What is the range of this? 0-100? yes?
+                #TODO: find out how to use sarsa values in ucb (they are very low)
+                val = self.sarsa_agents[role_index].value(current_state, action_index)
+                current_sucb = ucb(current_node, val, action.N)
+            else:    
                 current_sucb = ucb(current_node, action.Q, action.N)
                 if current_sucb > best_sucb:
                     best_sucb = current_sucb
@@ -142,10 +140,9 @@ class UCTSelectionPolicy(Policy):
     def __init__(self, role_count):
         Policy.__init__(self, role_count)
 
-    def find_action(self, current_node, sm, role_index):
+    def find_action(self, current_node, role_index):
         best_action = -1
         best_sucb = -float("inf")
-
         for action_index in current_node.actions[role_index]:
             action = current_node.actions[role_index][action_index]
             current_sucb = ucb(current_node, action.Q, action.N)
@@ -157,7 +154,7 @@ class UCTSelectionPolicy(Policy):
 
     def choose(self, current_move, sm, current_state = None, current_node = None):
         for role_index in range(self.role_count):
-            current_move.set(role_index, self.find_action(current_node, sm, role_index))
+            current_move.set(role_index, self.find_action(current_node, role_index))
 
 
 class RandomPolicy(Policy):

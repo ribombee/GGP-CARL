@@ -137,23 +137,17 @@ class CarlPlayer(MatchPlayer):
     def do_selection(self, root):
         last_node = root
         current_node = root
-        current_state = self.sm.get_current_state()
         next_move = None
 
-        while (current_node is not None) and (not self.sm.is_terminal()):
+        while current_node is not None and len(current_node.actions) is not 0:
             next_move = self.sm.get_joint_move()
-
-            self.selection_policy.choose(next_move, self.sm, current_node=current_node, current_state = current_state)
+            self.selection_policy.choose(next_move, self.sm, current_node=current_node)
             
             last_node = current_node
             
-            current_node = current_node.getChild(next_move, self.role_count)
-
-            #Update state/state machine
-            self.sm.next_state(next_move, current_state)
-            self.sm.update_bases(current_state)       
+            current_node = current_node.getChild(next_move, self.role_count)       
         
-        return last_node, next_move, current_state
+        return last_node, next_move
 
     #TODO: make create_root and do_expansion be the same function?
     #Create the first node of our MCTS search tree.
@@ -169,10 +163,24 @@ class CarlPlayer(MatchPlayer):
 
 
     #Expansion phase of MCTS. We expand a selected node with a selected action.
-    def do_expansion(self, selected_node, next_move, selected_node_state):
-        #We add one edge to the current node
-        new_node = Node(parent=selected_node, parent_move=next_move)
-        selected_node.children[hash_joint_move(self.role_count, next_move)] = new_node
+    def do_expansion(self, selected_node = None, next_move = None):
+        if selected_node is not None:
+            #set statemachine state to leaf node state
+            self.sm.update_bases(selected_node.state)
+        
+        next_state = self.sm.get_current_state()
+        if next_move is not None:
+            #create state for expanded node
+            self.sm.next_state(next_move, next_state)
+
+            #move statemachine to the expanded state
+            self.sm.update_bases(next_state)
+
+        new_node = Node(next_state, parent=selected_node, parent_move=next_move)
+
+        if selected_node is not None:
+            #add our new node to selected node children
+            selected_node.children[hash_joint_move(self.role_count, next_move)] = new_node
 
         if not self.sm.is_terminal():
             for role in range(self.role_count):
@@ -225,12 +233,12 @@ class CarlPlayer(MatchPlayer):
         self.sm.update_bases(root_state)
         
         if self.root is None:
-            self.create_root()
+            self.root = self.do_expansion()
             self.master_root = self.root
         else:
             self.root = self.root.getChild(self.match.joint_move, self.role_count)
             if self.root is None:
-                self.create_root()
+                self.root = self.do_expansion()
             else:
                 self.root.parent = None
                 self.root.parent_move = None
@@ -246,8 +254,8 @@ class CarlPlayer(MatchPlayer):
             #Reset state machine
             self.sm.update_bases(root_state)
 
-            node, move, state = self.do_selection(self.root)
-            new_node = self.do_expansion(node, move, state)
+            node, move = self.do_selection(self.root)
+            new_node = self.do_expansion(node, move)
             self.do_playout()
             self.do_backpropagation(new_node)
             self.mcts_runs += 1
@@ -318,7 +326,7 @@ class CarlPlayer(MatchPlayer):
         runs = self.perform_mcts(finish_time)
         print "Managed ",  runs, "playouts."
         
-        self.iteration_count_li st.append(runs)
+        self.iteration_count_list.append(runs)
         self.time_list.append(time.time() - start_time)
         
         return self.choose()
