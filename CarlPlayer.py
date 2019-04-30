@@ -57,8 +57,7 @@ class CarlPlayer(MatchPlayer):
         return action.Q + self.ucb_constant * math.sqrt(math.log(node.N) / action.N)
 
     #----SARSA
-
-    #TODO: multithread?
+    
     #Playouts used by SARSA to learn policies before the game starts.
     def perform_sarsa(self, finish_time):
         #Playout related variables
@@ -120,16 +119,6 @@ class CarlPlayer(MatchPlayer):
                 best_action = action_index
 
         return best_action
-        
-    #Returns the joint move where each player has its highest valued move based on UCB.
-    def select_joint_move(self, current_node):
-        #TODO: optimize to not create new joint move every time
-        #Maybe we need to allocate for each state?
-        joint_move = self.sm.get_joint_move()
-        for role_index in range(self.role_count):
-            joint_move.set(role_index, self.select_best_move(role_index, current_node))
-
-        return joint_move
 
     #Selection phase of the mcts. 
     #We move down the tree, selecting actions with the highest ucb values 
@@ -137,10 +126,9 @@ class CarlPlayer(MatchPlayer):
     def do_selection(self, root):
         last_node = root
         current_node = root
-        next_move = None
+        next_move = self.sm.get_joint_move()
 
         while current_node is not None and len(current_node.actions) is not 0:
-            next_move = self.sm.get_joint_move()
             self.selection_policy.choose(next_move, self.sm, current_node=current_node)
             
             last_node = current_node
@@ -148,18 +136,6 @@ class CarlPlayer(MatchPlayer):
             current_node = current_node.getChild(next_move, self.role_count)       
         
         return last_node, next_move
-
-    #TODO: make create_root and do_expansion be the same function?
-    #Create the first node of our MCTS search tree.
-    def create_root(self):
-        self.root = Node(None, None)
-        if not self.sm.is_terminal():
-            for role in range(self.role_count):
-                self.root.actions.append({}) 
-                legal_state = self.sm.get_legal_state(role)
-                for action_index in range(legal_state.get_count()):
-                    action = legal_state.get_legal(action_index)
-                    self.root.actions[role][action] = Action(action)
 
 
     #Expansion phase of MCTS. We expand a selected node with a selected action.
@@ -204,10 +180,6 @@ class CarlPlayer(MatchPlayer):
             current_state = self.sm.get_current_state(current_state)
 
             self.playout_policy.choose(current_move, self.sm, current_state = current_state)
-            #Choose moves for all players.
-            #for role_index in range(self.role_count):
-            #    choice = self.sarsaAgents[role_index].nondet_policy(current_state, self.sm.get_legal_state(role_index))
-            #    current_move.set(role_index, choice)
 
             #Update state + state machine
             self.sm.next_state(current_move, current_state)
@@ -337,7 +309,7 @@ class CarlPlayer(MatchPlayer):
         print "CLEANING"
         print "****************************************************"
 
-        self.log_to_csv()
+        CarlUtils.log_to_csv(self)
 
         if self.master_root is not None:
             tree_cleanup(self.master_root)
@@ -352,20 +324,3 @@ class CarlPlayer(MatchPlayer):
         if self.sm is not None:
             interface.dealloc_statemachine(self.sm)
             self.sm = None
-
-    def log_to_csv(self):
-        #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
-        # <List with number of expansions per state> <List with time taken per state>
-
-        with open(self.csv_log_file, 'a') as log_file:
-            log_file.write(str(self.sarsa_iterations))
-            log_file.write(',')
-            for i, item in enumerate(self.iteration_count_list):
-                if i != 0:
-                    log_file.write(';')
-                log_file.write(str(item))
-            log_file.write(',')
-            for i, item in enumerate(self.time_list):
-                if i != 0:
-                    log_file.write(';')
-                log_file.write(str(item))

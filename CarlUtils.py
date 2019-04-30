@@ -1,7 +1,6 @@
 import math, random
 from ggplib import interface
 
-
 #----Helper functions
 
 #Helper function for hashing joint moves to use as index for dictionary
@@ -30,7 +29,7 @@ def ucb(node, q_val, visits):
     return q_val + UCB_CONST * math.sqrt(math.log(node.N) / visits)
 
 
-#----Search classes
+#----Search tree classes
 
 #Node for MCTS search tree
 class Node():
@@ -61,10 +60,10 @@ class Node():
         #Children nodes of the current node, indexed by hashed joint move.
         self.children = {}
 
+
 #Action that a role can take from a node.
 #There are multiple actions per role per node
 class Action():
-
     def __init__(self, move, N = 0, Q = -1):
         #Integer that represents the action's move according
         self.move = move
@@ -74,7 +73,6 @@ class Action():
         
         #Q value for this action for this role
         self.Q = Q
-
 
 
 #----Policies
@@ -88,7 +86,6 @@ class Policy:
         pass
 
 class SarsaSelectionPolicy(Policy):
-
     def __init__(self, role_count, sarsa_agents, sucb_threshold):
         Policy.__init__(self, role_count)
         self.sarsa_agents = sarsa_agents
@@ -120,13 +117,6 @@ class SarsaSelectionPolicy(Policy):
 
 
 class SarsaPlayoutPolicy(Policy):
-    '''
-        #Choose moves for all players.
-            for role_index in range(self.role_count):
-                choice = self.sarsaAgents[role_index].nondet_policy(current_state, self.sm.get_legal_state(role_index))
-                current_move.set(role_index, choice)
-    '''
-
     def __init__(self, role_count, sarsa_agents):
         Policy.__init__(self, role_count)
         self.sarsa_agents = sarsa_agents
@@ -135,6 +125,7 @@ class SarsaPlayoutPolicy(Policy):
         for role_index in range(self.role_count):
             choice = self.sarsa_agents[role_index].nondet_policy(current_state, sm.get_legal_state(role_index))
             current_move.set(role_index, choice)
+
 
 class UCTSelectionPolicy(Policy):
     def __init__(self, role_count):
@@ -167,4 +158,23 @@ class RandomPolicy(Policy):
             ls = sm.get_legal_state(role_index)
             choice = ls.get_legal(random.randrange(0, ls.get_count()))
             current_move.set(role_index, choice)
+
+#----Helper functions
+
+def log_to_csv(carl):
+    #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
+    # <List with number of expansions per state> <List with time taken per state>
+
+    with open(carl.csv_log_file, 'a') as log_file:
+        log_file.write(str(carl.sarsa_iterations))
+        log_file.write(',')
+        for i, item in enumerate(carl.iteration_count_list):
+            if i != 0:
+                log_file.write(';')
+            log_file.write(str(item))
+        log_file.write(',')
+        for i, item in enumerate(carl.time_list):
+            if i != 0:
+                log_file.write(';')
+            log_file.write(str(item))
         
