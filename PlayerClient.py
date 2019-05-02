@@ -33,9 +33,9 @@ class PlayerClient(Client):
 	def __init__(self, ip, password = None):
 		Client.__init__(self, ip, password)
 
-	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_iterations = 100000):
+	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_expansions = 100000):
 		self.shell_send('cd ~/Documents/CarlAgent/GGP-CARL')
-		self.shell_send('python play.py ' + player_type + ' ' + regressor_type + ' ' + str(port)) 
+		self.shell_send('python play.py ' + player_type + ' ' + str(port) + ' ' + regressor_type + ' ' + str(max_expansions)) 
 
 	def stop_player(self):
 		self.shell_send(chr(3), False)

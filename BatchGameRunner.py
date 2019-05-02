@@ -40,7 +40,7 @@ class BatchGameRunner:
 
     def update_player_repo(self, client):
         client.shell_send("git pull")
-        time.sleep(1)
+        time.sleep(3)
 
     def setup(self):
         #Saving environment variables as a dict
@@ -79,13 +79,13 @@ class BatchGameRunner:
                     + self.player2_ip + " " + str(self.player2_port) + " " + self.player2_type + "\""
         
         self.player1_client = PlayerClient(self.player1_ip, "koder")
+        self.update_player_repo(self.player1_client)
         self.player1_client.start_player(self.player1_type, self.player1_regressor, self.player1_port, self.max_expansions)
         
         self.player2_client = PlayerClient(self.player2_ip, "koder")
+        self.update_player_repo(self.player2_client)
         self.player2_client.start_player(self.player2_type, self.player2_regressor,  self.player2_port, self.max_expansions)
 
-        self.update_player_repo(self.player1_client)
-        self.update_player_repo(self.player2_client)
 
         filename = self.game_name + "_" + self.player1_type + "_" + self.player2_type + "_"
         filename += str(self.choose_file_suffix(filename)) + ".csv"
