@@ -204,7 +204,7 @@ def log_to_csv(sarsa):
     #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
     # <Error over time> <Expected exploration factor (EEF)> <List of instance errors>
     print sarsa.error_list
-    with open(sarsa.csv_log_file, 'w+') as log_file:
+    with open(sarsa.csv_log_file, 'a') as log_file:
         log_file.write(str(sarsa.error_over_time))
         log_file.write(',')
         EEF = str(sarsa.expected_exploration())

@@ -241,7 +241,6 @@ class CarlPlayer(MatchPlayer):
             current_state = self.sm.get_current_state(current_state)
 
             self.playout_policy.choose(current_move, self.sm, current_state = current_state)
-
             #Update state + state machine
             self.sm.next_state(current_move, current_state)
             self.sm.update_bases(current_state)
