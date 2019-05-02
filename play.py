@@ -36,7 +36,7 @@ def main():
     port = int(sys.argv[2])
 
     regressor = None
-    expansions = 100000
+    expansions = -1
     if len(sys.argv) >= 4:
         regressor_name = sys.argv[3]
 
@@ -48,7 +48,7 @@ def main():
             regressor = PassiveAggressiveRegressor()
 
         if len(sys.argv) >= 5:
-            expansions = sys.argv[4]
+            expansions = int(sys.argv[4])
 
         if regressor is None:
             print("Invalid regressor given, please choose from the following: sgd, mlp, paggro, knn, hoeffding, forest, bagging")

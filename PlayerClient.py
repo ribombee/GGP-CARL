@@ -23,7 +23,8 @@ class Client:
 		command = message
 		if new_line:
 			command += "\n"
-		self.channel.send(message)
+		time.sleep(0.2)
+		self.channel.send(command)
 
 	def command(self, message):
 		stdin, stdout, stderr = self.ssh.exec_command(message)
@@ -32,9 +33,12 @@ class Client:
 class PlayerClient(Client):
 	def __init__(self, ip, password = None):
 		Client.__init__(self, ip, password)
-
-	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_expansions = 100000):
+	def enter_project_dir(self):
 		self.shell_send('cd ~/Documents/CarlAgent/GGP-CARL')
+    def update_player_repo(self):
+        self.shell_send("git pull")
+        time.sleep(3)
+	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_expansions = 100000):
 		self.shell_send('python play.py ' + player_type + ' ' + str(port) + ' ' + regressor_type + ' ' + str(max_expansions)) 
 
 	def stop_player(self):

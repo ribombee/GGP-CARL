@@ -38,10 +38,6 @@ class BatchGameRunner:
                     highest_count = file_count
         return highest_count + 1
 
-    def update_player_repo(self, client):
-        client.shell_send("git pull")
-        time.sleep(3)
-
     def setup(self):
         #Saving environment variables as a dict
         environment_vars = os.environ.copy()
@@ -77,13 +73,15 @@ class BatchGameRunner:
         self.command = server_command + " -Pmyargs=\"" + "results" + " " + self.game_name + " " + self.start_clock + " " + self.play_clock + " " \
                     + self.player1_ip + " " + str(self.player1_port) + " " + self.player1_type + " " \
                     + self.player2_ip + " " + str(self.player2_port) + " " + self.player2_type + "\""
-        
+
         self.player1_client = PlayerClient(self.player1_ip, "koder")
-        self.update_player_repo(self.player1_client)
+        self.player1_client.enter_project_dir()
+        self.player1_client.update_player_repo()
         self.player1_client.start_player(self.player1_type, self.player1_regressor, self.player1_port, self.max_expansions)
         
         self.player2_client = PlayerClient(self.player2_ip, "koder")
-        self.update_player_repo(self.player2_client)
+        self.player2_client.enter_project_dir()
+        self.player2_client.update_player_repo()
         self.player2_client.start_player(self.player2_type, self.player2_regressor,  self.player2_port, self.max_expansions)
 
 
