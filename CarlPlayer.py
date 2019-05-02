@@ -6,6 +6,7 @@ import csv
 
 from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
+from sklearn.base import clone
 
 from ggplib.player.mcs import MoveStat
 from ggplib.player.base import MatchPlayer
@@ -121,6 +122,7 @@ class CarlPlayer(MatchPlayer):
                 else:
                     instance_error = self.sarsa_agents[role_index].observe(current_tuple[0], current_tuple[1].get(role_index), 
                                                         reward=current_tuple[2][role_index])
+                instance_error = abs(instance_error)
                 self.sarsa_error += self.sarsa_error_lr*(instance_error - self.sarsa_error)
 
     def sarsa_playout(self, game_history):
@@ -145,6 +147,7 @@ class CarlPlayer(MatchPlayer):
             game_history.append(self.create_history_tuple(self.last_state, self.last_move, terminal = sm_terminal))
 
             depth += 1
+            
         game_branching_factor = game_branching_factor/float(depth)
         return depth, game_branching_factor
 
@@ -306,9 +309,10 @@ class CarlPlayer(MatchPlayer):
                 best_action = action
         return best_action
 
+
     #----GGPLIB
 
-    def __init__(self, selection_policy_type, playout_policy_type, name=None):
+    def __init__(self, selection_policy_type, playout_policy_type,  name=None):
         super(CarlPlayer, self).__init__(name)
         self.selection_policy_type = selection_policy_type
         self.playout_policy_type = playout_policy_type

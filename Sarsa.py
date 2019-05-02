@@ -27,26 +27,24 @@ class SarsaEstimator:
             lis = self.encode_state_action(state, action)
             return self.estimator.predict(lis)
         except NotFittedError:
-            return 50
+            return [50.0]
         
     def observe(self, state, action, reward=None, state_prime=None, action_prime=None):
         lis = self.encode_state_action(state, action)
 
-        error = -self.value(state, action)
+        error = -self.value(state, action)[0]
         if reward is not None:
             error += reward
             self.estimator.partial_fit(lis, [self.discount_factor*reward])
         elif state_prime is not None and action_prime is not None:
             prime_value = self.discount_factor*self.value(state_prime, action_prime)
-            error += prime_value
-            self.estimator.partial_fit(lis, [prime_value])
+            error += prime_value[0]
+            self.estimator.partial_fit(lis, prime_value)
         else:
             raise ValueError("A reward or derived state + action must be given")
         
         #return the error of the observation
         return abs(error)
-
-        
 
     def policy(self, state, legal_state):
         highest_value = float('-inf')

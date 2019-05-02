@@ -1,32 +1,37 @@
-import random
+import random, math, time
 from Sarsa import SarsaEstimator
 from Sarsa import SarsaTabular
-import time
-from sklearn.linear_model import SGDRegressor
-from sklearn.neural_network import MLPRegressor
+from sklearn.base import clone
 
 from ggplib.player.base import MatchPlayer
 
 class SarsaPlayer(MatchPlayer):
-    def __init__(self, name=None):
+    def __init__(self, estimator, log_to_file = False, name=None):
         super(SarsaPlayer, self).__init__(name)
         self.sarsa_agents = {}
         self.role = 0
         self.error_over_time = 0
         self.error_lr = 0.0001
+        self.csv_log_file = "PlayerLog.csv"
+        self.logging = log_to_file
+        self.error_list = []
+        self.sarsa_expansions = 0
+        self.average_branching_factor = 0
+        self.average_depth = 0
+        self.estimator = estimator
 
     def reset(self, match):
         self.sm = match.sm.dupe()
         self.role_count = len(match.sm.get_roles())
         self.role = match.our_role_index
-        #Keep the estimator from previous game if the next game is the same
-        if not self.match or not self.match.game_info.game == match.game_info.game:
-            self.error_over_time = 0
-            role_count = len(match.sm.get_roles())
-            for role_index in range(role_count):
-                self.sarsa_agents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
-                #self.sarsa_agents[role_index] = SarsaEstimator(MLPRegressor(hidden_layer_sizes=(50,50)), len(match.game_info.model.actions[role_index]))
-                #self.sarsa_agents[role_index] = SarsaTabular()
+        self.error_over_time = 0
+        self.sarsa_expansions = 0
+        self.average_branching_factor = 0
+        self.average_depth = 0
+        role_count = len(match.sm.get_roles())
+        for role_index in range(role_count):
+            #Restart sarsa agents
+            self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
 
         self.match = match
 
@@ -38,9 +43,14 @@ class SarsaPlayer(MatchPlayer):
 
         self.perform_sarsa(finish_time)
 
+    def cleanup(self):
+        log_to_csv(self)
+
 
     #----SARSA
-    
+    def expected_exploration(self):
+        return math.log(self.sarsa_expansions, self.average_branching_factor)/self.average_depth
+
     def copy_state(self, copy_state, to_state = None):
         new_state = to_state
         if new_state is None: 
@@ -60,9 +70,14 @@ class SarsaPlayer(MatchPlayer):
     
     #Choose moves for all players.
     def choose_moves(self):
+        move_count = 1
         for role_index in range(self.role_count):
-            choice = self.sarsa_agents[role_index].policy_training(self.current_state, self.sm.get_legal_state(role_index))
+            legal_state = self.sm.get_legal_state(role_index)
+            move_count *= legal_state.get_count()
+
+            choice = self.sarsa_agents[role_index].policy_training(self.current_state, legal_state)
             self.current_move.set(role_index, choice)
+        return move_count
 
     #Returns (state, move, reward) tuple.
     def create_history_tuple(self, current_state, current_move, terminal = False):
@@ -87,7 +102,7 @@ class SarsaPlayer(MatchPlayer):
             current_tuple = game_history[hist_ind]
             for role_index in range(self.role_count):
                 #If there's no reward, we aren't at terminal so we use s' a' 
-                instance_error = 0
+                instance_error = 0.0
                 if current_tuple[2] is None:
                     next_tuple = game_history[hist_ind + 1]
                     instance_error = self.sarsa_agents[role_index].observe(current_tuple[0], current_tuple[1].get(role_index), 
@@ -95,12 +110,17 @@ class SarsaPlayer(MatchPlayer):
                 else:
                     instance_error = self.sarsa_agents[role_index].observe(current_tuple[0], current_tuple[1].get(role_index), 
                                                         reward=current_tuple[2][role_index])
+                instance_error = abs(instance_error)
+                if self.sarsa_expansions % 1000 == 0:
+                    self.error_list.append(instance_error)
                 self.error_over_time += self.error_lr*(instance_error - self.error_over_time)
+    
     def sarsa_playout(self, game_history):
         sm_terminal = self.sm.is_terminal()
         depth = 1
+        game_branching_factor = 0
         while not sm_terminal:
-            self.choose_moves()
+            game_branching_factor += self.choose_moves()
 
             #Current move/action becomes last move/action
             self.last_state.assign(self.current_state)
@@ -112,11 +132,14 @@ class SarsaPlayer(MatchPlayer):
             self.sm.update_bases(self.current_state)
 
             sm_terminal = self.sm.is_terminal()
+
             #add last state + move to history. Also add goal value if terminal state 
             game_history.append(self.create_history_tuple(self.last_state, self.last_move, terminal = sm_terminal))
 
             depth += 1
-        return depth
+        
+        game_branching_factor = game_branching_factor/float(depth)
+        return depth, game_branching_factor
 
     #Playouts used by SARSA to learn policies before the game starts.
     def perform_sarsa(self, finish_time):
@@ -134,13 +157,16 @@ class SarsaPlayer(MatchPlayer):
             #Stores tuples of state, reward, action
             game_history = []
 
-            depth = self.sarsa_playout(game_history)
+            game_depth, game_branching_factor = self.sarsa_playout(game_history)
 
             self.observe_history(game_history)
 
-            print "Error over time: " + str(self.error_over_time)
+            #print "Error over time: " + str(self.error_over_time)
+
             #Update average depth
-            #self.average_depth = (playout_count*self.average_depth + depth) / float(playout_count + 1) 
+            self.average_depth = (playout_count*self.average_depth + game_depth) / float(playout_count + 1) 
+            self.average_branching_factor =(playout_count*self.average_branching_factor + game_branching_factor) / float(playout_count + 1) 
+            self.sarsa_expansions += game_depth
 
             playout_count += 1
             
@@ -150,7 +176,6 @@ class SarsaPlayer(MatchPlayer):
         self.sm.update_bases(self.match.get_current_state())
 
         print "Managed ",  self.perform_sarsa(finish_time), "playouts."
-        
 
         self.sm.update_bases(self.match.get_current_state())
         print "Printing action state values of current state..."
@@ -168,5 +193,24 @@ class SarsaPlayer(MatchPlayer):
                 print "action ", self.match.game_info.model.actions[role_index][ls.get_legal(act)], " value is ", self.sarsa_agents[role_index].value(state, act)
             print ""
         
+        print "EEF: " + str(self.expected_exploration())
+        print "Avg branching factor: " + str(self.average_branching_factor)
+        print "Avg depth: " + str(self.average_depth)
         ls = self.sm.get_legal_state(self.role)
         return self.sarsa_agents[self.role].policy(self.sm.get_current_state(), ls)
+
+    
+def log_to_csv(sarsa):
+    #This logs to the log file a single line. This line should be all the relevant data for one game in the following format.
+    # <Error over time> <Expected exploration factor (EEF)> <List of instance errors>
+    print sarsa.error_list
+    with open(sarsa.csv_log_file, 'w+') as log_file:
+        log_file.write(str(sarsa.error_over_time))
+        log_file.write(',')
+        EEF = str(sarsa.expected_exploration())
+        log_file.write(EEF)
+        log_file.write(',')
+        for i, item in enumerate(sarsa.error_list):
+            if i != 0:
+                log_file.write(';')
+            log_file.write(str(item))
