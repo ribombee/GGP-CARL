@@ -40,7 +40,7 @@ class CarlPlayer(MatchPlayer):
     selection_policy = None
     playout_policy = None
     ucb_constant = 1.414
-    max_expansions = 1000000
+    max_expansions = -1
 
     #Logging info
     csv_log_file = "PlayerLog.csv"
@@ -234,6 +234,7 @@ class CarlPlayer(MatchPlayer):
         current_move = self.sm.get_joint_move()
         current_state = self.sm.new_base_state()
         while True:
+            self.mcts_expansions += 1
             if self.sm.is_terminal():
                 break
 
@@ -245,7 +246,6 @@ class CarlPlayer(MatchPlayer):
             self.sm.next_state(current_move, current_state)
             self.sm.update_bases(current_state)
 
-            self.mcts_expansions += 1
 
     #Use the value of the terminal state from playout to update Q values for each visited node.
     def mcts_backpropagation(self, tree_node):
@@ -294,6 +294,7 @@ class CarlPlayer(MatchPlayer):
             self.mcts_playout()
             self.mcts_backpropagation(new_node)
             self.mcts_runs += 1
+            self.mcts_expansions += 1
         
         return self.mcts_expansions
 
