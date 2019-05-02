@@ -90,13 +90,12 @@ class Policy:
         pass
 
 class SarsaSelectionPolicy(Policy):
-    def __init__(self, role_count, sarsa_agents, sucb_threshold, K = 100):
+    def __init__(self, role_count, sarsa_agents, K = 100):
         Policy.__init__(self, role_count)
         self.sarsa_agents = sarsa_agents
-        self.sucb_threshold = sucb_threshold
         #Parameter that specifies ca. how many action state visits until beta is 1/2
         self.K = K
-        
+
 
     #beta values start at 1 and lower over more visits
     def beta_val(self, action):

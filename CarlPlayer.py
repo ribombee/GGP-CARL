@@ -8,39 +8,48 @@ from Sarsa import SarsaEstimator
 from sklearn.linear_model import SGDRegressor
 
 from ggplib.player.mcs import MoveStat
-#from ggplib.util import log
 from ggplib.player.base import MatchPlayer
 from ggplib import interface
 import CarlUtils
 from CarlUtils import Action, Node, tree_cleanup, hash_joint_move
 
 class CarlPlayer(MatchPlayer):
-    sarsa_agents = {}
+    #General match variables
     role_count = 0
     role = 0
     sm = None
-    playout_base_state = None
-
-    ucb_constant = 1.414
-    max_iterations = 10000
-    csv_log_file = "PlayerLog.csv"
-    iteration_count_list = []
-    time_list = []
-    sarsa_iterations = 0
-    subc_threshold = 2
-
+    
+    #Current node information
     current_move = None
     current_state = None
     last_move = None
     last_state = None
-    
-    root = None
 
+    #Sarsa variables
+    sarsa_agents = {}
+    average_depth = 0
+    average_branching_factor = 0
+    sarsa_iterations = 0
+    sarsa_expansions = 0
+    sarsa_error = 0
+    sarsa_error_lr = 0.0001
+    
+    #MCTS variables
+    root = None
     selection_policy = None
     playout_policy = None
+    ucb_constant = 1.414
+    max_expansions = 1000000
 
+    #Logging info
+    csv_log_file = "PlayerLog.csv"
+    iteration_count_list = []
+    time_list = []
+    
+    
     #----Helper functions
 
+    #Returns move name as string
     def get_move_name(self, role, move):
         return self.match.game_info.model.actions[role][move]
 
@@ -49,81 +58,130 @@ class CarlPlayer(MatchPlayer):
         for role_index in range(self.role_count):
             print "Player no.", role_index, " chose ", self.get_move_name(role_index, joint_move.get(role_index))
 
-    #Helper function to calculate the ucb value of an action
-    def ucb(self, node, action):
-        if(action.N == 0 or node.N == 0):
-            return float("inf")
-        
-        return action.Q + self.ucb_constant * math.sqrt(math.log(node.N) / action.N)
 
     #----SARSA
     
+    
+    def copy_state(self, copy_state, to_state = None):
+        new_state = to_state
+        if new_state is None: 
+            new_state = self.sm.new_base_state()
+        new_state.assign(copy_state)
+        return new_state
+
+    def copy_move(self, copy_move, to_move = None):
+        new_move = to_move
+        if new_move is None:
+            new_move = self.sm.get_joint_move()
+
+        for role_index in range(self.role_count):
+            new_move.set(role_index, copy_move.get(role_index))
+            
+        return new_move
+    
+    #Choose moves in sarsa for all players. Returns average no. of moves per player.
+    def choose_moves(self):
+        move_count = 1
+        for role_index in range(self.role_count):
+            legal_state = self.sm.get_legal_state(role_index)
+            move_count *= legal_state.get_count()
+
+            choice = self.sarsa_agents[role_index].policy_training(self.current_state, legal_state)
+            self.current_move.set(role_index, choice)
+        return move_count
+
+    #Returns (state, move, reward) tuple for sarsa.
+    def create_history_tuple(self, current_state, current_move, terminal = False):
+        hist_tuple = None
+        hist_state = self.copy_state(current_state)
+        hist_move = self.copy_move(current_move)
+
+        reward = None
+        if terminal:
+            goal_list = []
+            for role_index in range(self.role_count):
+                goal_list.append(self.sm.get_goal_value(role_index))
+            reward = goal_list
+
+        hist_tuple = (hist_state, hist_move, reward)
+        return hist_tuple
+    
+    #TODO: deallocate game_history after training
+    def observe_history(self, game_history):
+        history_size = len(game_history)
+        for hist_ind in range(history_size - 1, -1, -1):
+            current_tuple = game_history[hist_ind]
+            for role_index in range(self.role_count):
+                #If there's no reward, we aren't at terminal so we use s' a' 
+                instance_error = 0
+                if current_tuple[2] is None:
+                    next_tuple = game_history[hist_ind + 1]
+                    instance_error = self.sarsa_agents[role_index].observe(current_tuple[0], current_tuple[1].get(role_index), 
+                                                        state_prime=next_tuple[0], action_prime=next_tuple[1].get(role_index))
+                else:
+                    instance_error = self.sarsa_agents[role_index].observe(current_tuple[0], current_tuple[1].get(role_index), 
+                                                        reward=current_tuple[2][role_index])
+                self.sarsa_error += self.sarsa_error_lr*(instance_error - self.sarsa_error)
+
+    def sarsa_playout(self, game_history):
+        sm_terminal = self.sm.is_terminal()
+        depth = 1
+        game_branching_factor = 0
+        while not sm_terminal:
+            game_branching_factor += self.choose_moves()
+
+            #Current move/action becomes last move/action
+            self.last_state.assign(self.current_state)
+            self.copy_move(self.current_move, self.last_move)
+
+            #Update current_state with joint move
+            self.sm.next_state(self.current_move, self.current_state)
+            #Update the state machine
+            self.sm.update_bases(self.current_state)
+
+            sm_terminal = self.sm.is_terminal()
+            
+            #add last state + move to history. Also add goal value if terminal state 
+            game_history.append(self.create_history_tuple(self.last_state, self.last_move, terminal = sm_terminal))
+
+            depth += 1
+        game_branching_factor = game_branching_factor/float(depth)
+        return depth, game_branching_factor
+
     #Playouts used by SARSA to learn policies before the game starts.
     def perform_sarsa(self, finish_time):
         #Playout related variables
         playout_count = 0
 
         #To ensure that we don't overshoot our training time
-        time_offset = 0.01
-
+        time_offset = 0.05
         while time.time() + time_offset < finish_time:
-            #Rewind the state machine
-            self.sm.update_bases(self.match.sm.get_current_state())
+            #Get game state & rewind the state machine
+            self.match.sm.get_current_state(self.current_state)
+            self.sm.update_bases(self.current_state)
 
-            init = True
-            while time.time() + time_offset < finish_time and not self.sm.is_terminal():
+            #Stores tuples of state, reward, action
+            game_history = []
 
-                #Choose moves for all players.
-                for role_index in range(self.role_count):
-                    choice = self.sarsa_agents[role_index].policy_training(self.current_state, self.sm.get_legal_state(role_index))
-                    self.current_move.set(role_index, choice)
+            game_depth, game_branching_factor = self.sarsa_playout(game_history)
 
-                if not init:
-                    #update all agents with bootstrapping
-                    for role_index in range(self.role_count):
-                        self.sarsa_agents[role_index].observe(self.last_state, self.last_move.get(role_index), state_prime=self.current_state, action_prime=self.current_move.get(role_index))
-                else:
-                     init = False
+            self.observe_history(game_history)
 
-                #Current move/action becomes last move/action
-                if not self.sm.is_terminal():
-                    self.last_state.assign(self.current_state)
-                    for role_index in range(self.role_count):
-                        self.last_move.set(role_index, self.current_move.get(role_index))
-
-
-                # Update current_state with joint move
-                self.sm.next_state(self.current_move, self.current_state)
-                # update the state machine
-                self.sm.update_bases(self.current_state)
-            
-            #update all agents with end reward
-            for role_index in range(self.role_count):
-                self.sarsa_agents[role_index].observe(self.last_state, self.last_move.get(role_index), reward=self.sm.get_goal_value(role_index))
-
+            #Update average depth
+            self.average_depth = (playout_count*self.average_depth + game_depth) / float(playout_count + 1) 
+            self.average_branching_factor =(playout_count*self.average_branching_factor + game_branching_factor) / float(playout_count + 1) 
+            self.sarsa_expansions += game_depth
             playout_count += 1
+        
         return playout_count
 
 
     #----MCTS
 
-    #Here we select a move with the highest UCB value.
-    def select_best_move(self, role, current_node):
-        best_action = -1
-        best_ucb = -float("inf")
-
-        for action_index in current_node.actions[role]:
-            temp = self.ucb(current_node, current_node.actions[role][action_index])
-            if temp > best_ucb:
-                best_ucb = temp
-                best_action = action_index
-
-        return best_action
-
     #Selection phase of the mcts. 
     #We move down the tree, selecting actions with the highest ucb values 
     #until we reach terminal state or an unexpanded node.
-    def do_selection(self, root):
+    def mcts_selection(self, root):
         last_node = root
         current_node = root
         next_move = self.sm.get_joint_move()
@@ -137,25 +195,24 @@ class CarlPlayer(MatchPlayer):
         
         return last_node, next_move
 
-
     #Expansion phase of MCTS. We expand a selected node with a selected action.
-    def do_expansion(self, selected_node = None, next_move = None):
+    def mcts_expansion(self, selected_node = None, next_move = None):
         if selected_node is not None:
-            #set statemachine state to leaf node state
+            #Set statemachine state to leaf node state
             self.sm.update_bases(selected_node.state)
         
         next_state = self.sm.get_current_state()
         if next_move is not None:
-            #create state for expanded node
+            #Create state for expanded node
             self.sm.next_state(next_move, next_state)
 
-            #move statemachine to the expanded state
+            #Move statemachine to the expanded state
             self.sm.update_bases(next_state)
 
         new_node = Node(next_state, parent=selected_node, parent_move=next_move)
 
         if selected_node is not None:
-            #add our new node to selected node children
+            #Add our new node to selected node children
             selected_node.children[hash_joint_move(self.role_count, next_move)] = new_node
 
         if not self.sm.is_terminal():
@@ -170,7 +227,7 @@ class CarlPlayer(MatchPlayer):
         
     #Simulation phase of MCTS.
     #We play randomly for each player until we reach a terminal state.
-    def do_playout(self):
+    def mcts_playout(self):
         current_move = self.sm.get_joint_move()
         current_state = self.sm.new_base_state()
         while True:
@@ -185,13 +242,15 @@ class CarlPlayer(MatchPlayer):
             self.sm.next_state(current_move, current_state)
             self.sm.update_bases(current_state)
 
+            self.mcts_expansions += 1
+
     #Use the value of the terminal state from playout to update Q values for each visited node.
-    def do_backpropagation(self, tree_node):
+    def mcts_backpropagation(self, tree_node):
         while not (tree_node.parent_move == None or tree_node.parent == None):
             for role in range(self.role_count):
                 index = tree_node.parent_move.get(role)
                 action = tree_node.parent.actions[role][index]
-                #Update the running average
+                #Update the running Q value average
                 action.Q = (action.Q*action.N + self.sm.get_goal_value(role))/(float(action.N+1.0))
                 action.N += 1
             tree_node.N +=1
@@ -205,33 +264,35 @@ class CarlPlayer(MatchPlayer):
         self.sm.update_bases(root_state)
         
         if self.root is None:
-            self.root = self.do_expansion()
+            self.root = self.mcts_expansion()
             self.master_root = self.root
         else:
             self.root = self.root.getChild(self.match.joint_move, self.role_count)
             if self.root is None:
-                self.root = self.do_expansion()
+                self.root = self.mcts_expansion()
             else:
                 self.root.parent = None
                 self.root.parent_move = None
         
         self.mcts_runs = 1
+        self.mcts_expansions = 1
         while True:
             if time.time() > finish_by:
                 break
                 
-            if self.max_iterations > 0 and self.mcts_runs > self.max_iterations:
+            if self.max_expansions > 0 and self.mcts_expansions > self.max_expansions:
                 break
 
             #Reset state machine
             self.sm.update_bases(root_state)
 
-            node, move = self.do_selection(self.root)
-            new_node = self.do_expansion(node, move)
-            self.do_playout()
-            self.do_backpropagation(new_node)
+            node, move = self.mcts_selection(self.root)
+            new_node = self.mcts_expansion(node, move)
+            self.mcts_playout()
+            self.mcts_backpropagation(new_node)
             self.mcts_runs += 1
-        return self.mcts_runs
+        
+        return self.mcts_expansions
 
     #Choose the next move to play at the end of search.
     def choose(self):
@@ -247,19 +308,21 @@ class CarlPlayer(MatchPlayer):
 
     #----GGPLIB
 
-    def __init__(self, selection_policy_type, playout_policy_type, name=None, sucb_threshold = 0):
+    def __init__(self, selection_policy_type, playout_policy_type, name=None):
         super(CarlPlayer, self).__init__(name)
         self.selection_policy_type = selection_policy_type
         self.playout_policy_type = playout_policy_type
-        self.sucb_threshold = sucb_threshold
 
     def reset(self, match):
         self.role = match.our_role_index
         self.role_count = len(match.sm.get_roles())
+        self.sarsa_error = 0
+        self.average_branching_factor = 0
+        self.average_depth = 0
+        self.sarsa_expansions = 0
         for role_index in range(self.role_count):
             self.sarsa_agents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
             #self.sarsaAgents[role_index] = SarsaTabular()
-
         
         self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
@@ -275,8 +338,14 @@ class CarlPlayer(MatchPlayer):
 
         self.sarsa_iterations = self.perform_sarsa(finish_time)
 
+        print "Sarsa finished."
+        print "Average branching factor: " + str(self.average_branching_factor)
+        print "Average depth: " + str(self.average_depth)
+        estimated_explored = math.log(self.sarsa_expansions,self.average_branching_factor)/self.average_depth
+        print "Estimated state space explored: " + str(estimated_explored)
+
         if self.selection_policy_type == "sucb":
-            self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents, self.sucb_threshold)
+            self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents)
         elif self.selection_policy_type == "ucb":
             self.selection_policy = CarlUtils.UCTSelectionPolicy(self.role_count)
         else:
@@ -291,8 +360,8 @@ class CarlPlayer(MatchPlayer):
             print("Invalid playout policy provided, defaulting to random.")
             self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
-    def on_next_move(self, finish_time):
 
+    def on_next_move(self, finish_time):
         start_time = time.time()
         self.sm.update_bases(self.match.get_current_state())
         runs = self.perform_mcts(finish_time)

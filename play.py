@@ -37,9 +37,9 @@ def main():
     elif player_name.lower() == "carl_playout":
         player = CarlPlayer("ucb", "sarsa", "Carl with SARSA in playout")
     elif player_name.lower() == "carl_selection":
-        player = CarlPlayer("sucb", "random", "Carl with SARSA in selection", 10)
+        player = CarlPlayer("sucb", "random", "Carl with SARSA in selection")
     elif player_name.lower() == "carl_full":
-        player = CarlPlayer("sucb", "sarsa", "Carl with SARSA in selection and playout", 10)
+        player = CarlPlayer("sucb", "sarsa", "Carl with SARSA in selection and playout")
     elif player_name.lower() == "mcts":
         player = CarlPlayer("ucb", "random", "MCTS")
     elif player_name.lower() == "random":

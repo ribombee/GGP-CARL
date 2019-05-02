@@ -14,10 +14,6 @@ class SarsaEstimator:
         self.discount_factor = discount_factor
 
         self.possible_action_count = possible_action_count
-        #We will only need 2 lists allocated at each time
-        #TODO: check to make sure that more than 1 is needed
-        self.temp_list = [[],[]]
-        self.offset = 0
     
     def encode_state_action(self, state, action):
         state_list = state.to_list()
@@ -29,21 +25,28 @@ class SarsaEstimator:
     def value(self, state, action):
         try:
             lis = self.encode_state_action(state, action)
-            return self.estimator.predict(lis)*100.0
+            return self.estimator.predict(lis)
         except NotFittedError:
             return 50
         
     def observe(self, state, action, reward=None, state_prime=None, action_prime=None):
         lis = self.encode_state_action(state, action)
 
+        error = -self.value(state, action)
         if reward is not None:
-            reward = reward/100.0
+            error += reward
             self.estimator.partial_fit(lis, [self.discount_factor*reward])
         elif state_prime is not None and action_prime is not None:
-            prime_value = self.value(state_prime, action_prime)/100.0
-            self.estimator.partial_fit(lis, [self.discount_factor*prime_value])
+            prime_value = self.discount_factor*self.value(state_prime, action_prime)
+            error += prime_value
+            self.estimator.partial_fit(lis, [prime_value])
         else:
             raise ValueError("A reward or derived state + action must be given")
+        
+        #return the error of the observation
+        return abs(error)
+
+        
 
     def policy(self, state, legal_state):
         highest_value = float('-inf')
