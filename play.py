@@ -10,10 +10,6 @@ from ggplib.web.server import GGPServer
 from sklearn.linear_model import SGDRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import PassiveAggressiveRegressor
-from skmultiflow.lazy import knn
-from skmultiflow.trees import hoeffding_tree
-from skmultiflow.meta import adaptive_random_forests
-from skmultiflow.meta import oza_bagging
 
 from SarsaPlayer import SarsaPlayer
 from CarlPlayer import CarlPlayer
@@ -40,25 +36,19 @@ def main():
     port = int(sys.argv[2])
 
     regressor = None
-    if sys.argc == 4:
+    expansions = 100000
+    if len(sys.argv) >= 4:
         regressor_name = sys.argv[3]
 
-        
         if regressor_name.lower() == "sgd":
             regressor = SGDRegressor()
         elif regressor_name.lower() == "mlp":
             regressor = MLPRegressor((40, 20, 40))
         elif regressor_name.lower() == "paggro":
             regressor = PassiveAggressiveRegressor()
-        elif regressor_name.lower() == "knn":
-            regressor = knn()
-        elif regressor_name.lower() == "hoeffding":
-            regressor = hoeffding_tree()
-        elif regressor_name.lower() == "forest":
-            regressor = adaptive_random_forests()
-        elif regressor_name.lower() == "bagging":
-            #TODO:  bagging needs a base estimator, for now I put in SGDRegressor, but we might consider another option.
-            regressor = oza_bagging(SGDRegressor())
+
+        if len(sys.argv) >= 5:
+            expansions = sys.argv[4]
 
         if regressor is None:
             print("Invalid regressor given, please choose from the following: sgd, mlp, paggro, knn, hoeffding, forest, bagging")
@@ -69,13 +59,13 @@ def main():
     if player_name.lower() == "sarsa":
         player = SarsaPlayer(regressor, "sarsa")
     elif player_name.lower() == "carl_playout":
-        player = CarlPlayer("ucb","sarsa", regressor, "Carl with SARSA in playout")
+        player = CarlPlayer("ucb","sarsa", regressor, expansions, "Carl with SARSA in playout")
     elif player_name.lower() == "carl_selection":
-        player = CarlPlayer("sucb", "random", regressor, "Carl with SARSA in selection")
+        player = CarlPlayer("sucb", "random", regressor, expansions, "Carl with SARSA in selection")
     elif player_name.lower() == "carl_full":
-        player = CarlPlayer("sucb", "sarsa", regressor, "Carl with SARSA in selection and playout")
+        player = CarlPlayer("sucb", "sarsa", regressor, expansions, "Carl with SARSA in selection and playout")
     elif player_name.lower() == "mcts":
-        player = CarlPlayer("ucb", "random", regressor, "MCTS")
+        player = CarlPlayer("ucb", "random", regressor, expansions, "MCTS")
     elif player_name.lower() == "random":
         player = RandomPlayer("Random")
     else:

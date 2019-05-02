@@ -312,10 +312,12 @@ class CarlPlayer(MatchPlayer):
 
     #----GGPLIB
 
-    def __init__(self, selection_policy_type, playout_policy_type,  name=None):
+    def __init__(self, selection_policy_type, playout_policy_type, estimator, max_expansions=100000, name=None):
         super(CarlPlayer, self).__init__(name)
         self.selection_policy_type = selection_policy_type
         self.playout_policy_type = playout_policy_type
+        self.estimator = estimator
+        self.max_expansions = max_expansions
 
     def reset(self, match):
         self.role = match.our_role_index
@@ -325,7 +327,7 @@ class CarlPlayer(MatchPlayer):
         self.average_depth = 0
         self.sarsa_expansions = 0
         for role_index in range(self.role_count):
-            self.sarsa_agents[role_index] = SarsaEstimator(SGDRegressor(loss='huber'), len(match.game_info.model.actions[role_index]))
+            self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
             #self.sarsaAgents[role_index] = SarsaTabular()
         
         self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
@@ -369,7 +371,7 @@ class CarlPlayer(MatchPlayer):
         start_time = time.time()
         self.sm.update_bases(self.match.get_current_state())
         runs = self.perform_mcts(finish_time)
-        print "Managed ",  runs, "playouts."
+        print "Managed ",  runs, "expansions."
         
         self.iteration_count_list.append(runs)
         self.time_list.append(time.time() - start_time)

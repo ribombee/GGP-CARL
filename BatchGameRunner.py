@@ -4,18 +4,21 @@
 import subprocess, os, sys, time, datetime, csv, json, fileinput
 from PlayerClient import PlayerClient
 
+
+
 class BatchGameRunner:
     runs = 0
     game_name = ""
     start_clock = ""
     play_clock = ""
-    player1_ip, player1_type, player1_port, player1_client = "", "", 0, None
-    player2_ip, player2_type, player2_port, player2_client = "", "", 0, None
+    player1_ip, player1_type, player1_port, player1_regressor, player1_client = "", "", 0, "sgd", None
+    player2_ip, player2_type, player2_port, player2_regressor, player2_client = "", "", 0, "sgd", None
     command = ""
     ggp_base_path = ""
     ggp_base_results_file = "results"
     filedir = "logs/"
     filepath = ""
+    max_expansions = -1
 
     
     def get_file_suffix(self, filename):
@@ -45,7 +48,8 @@ class BatchGameRunner:
 
         if len(sys.argv) < 9:
             print("Error: Invalid arguments. Usage:")
-            print("<nr. of runs> <game key> <start clock> <play clock> <player 1 IP> <player 1 type> <player 2 IP> <player 2 type>")
+            print("<nr. of runs> <game key> <start clock> <play clock> <player 1 IP> <player 1 type> <player 1 regressor>* <player 2 IP> <player 2 type> <player 2 regressor>* <max expansions>*")
+            print("*optional, all must be set if used")
             print("Example: ticTacToe 20 10 127.0.0.1 random 127.0.0.1 random")
             exit()
         
@@ -53,8 +57,15 @@ class BatchGameRunner:
         self.game_name = sys.argv[2]
         self.start_clock = sys.argv[3]
         self.play_clock = sys.argv[4]
-        self.player1_ip, self.player1_type, self.player1_port = sys.argv[5], sys.argv[6], 1337
-        self.player2_ip, self.player2_type, self.player2_port = sys.argv[7], sys.argv[8], 1337
+
+        if len(sys.argv) >= 12:
+            self.player1_ip, self.player1_type, self.player1_port, self.player1_regressor = sys.argv[5], sys.argv[6], 1337, sys.argv[7]
+            self.player2_ip, self.player2_type, self.player2_port, self.player2_regressor = sys.argv[8], sys.argv[9], 1337, sys.argv[10]
+            self.max_expansions = sys.argv[11]
+        else:
+            self.player1_ip, self.player1_type, self.player1_port = sys.argv[5], sys.argv[6], 1337
+            self.player2_ip, self.player2_type, self.player2_port = sys.argv[7], sys.argv[8], 1337
+        
 
         #If players are on same address, make player 2 use a different port
         if self.player1_ip == self.player2_ip:
@@ -68,10 +79,10 @@ class BatchGameRunner:
                     + self.player2_ip + " " + str(self.player2_port) + " " + self.player2_type + "\""
         
         self.player1_client = PlayerClient(self.player1_ip, "koder")
-        self.player1_client.start_player(self.player1_type, self.player1_port)
+        self.player1_client.start_player(self.player1_type, self.player1_regressor, self.player1_port, self.max_expansions)
         
         self.player2_client = PlayerClient(self.player2_ip, "koder")
-        self.player2_client.start_player(self.player2_type, self.player2_port)
+        self.player2_client.start_player(self.player2_type, self.player2_regressor,  self.player2_port, self.max_expansions)
 
         self.update_player_repo(self.player1_client)
         self.update_player_repo(self.player2_client)
@@ -129,8 +140,10 @@ class BatchGameRunner:
 
         with open(self.filepath, 'a') as log_file:
             log_file.write(winner + ',')
-            log_file.write(self.process_player_data(p1_data) +  ',')
-            log_file.write(self.process_player_data(p2_data) +  ',')
+            #log_file.write(self.process_player_data(p1_data) +  ',')
+            #log_file.write(self.process_player_data(p2_data) +  ',')
+            log_file.write(p1_data +  ',')
+            log_file.write(p2_data +  ',')
             log_file.write(str(move_count) + '\n')
 
         self.player1_client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")

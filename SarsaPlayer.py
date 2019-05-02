@@ -173,9 +173,9 @@ class SarsaPlayer(MatchPlayer):
         return playout_count
 
     def on_next_move(self, finish_time):
-        self.sm.update_bases(self.match.get_current_state())
+        #self.sm.update_bases(self.match.get_current_state())
 
-        print "Managed ",  self.perform_sarsa(finish_time), "playouts."
+        #print "Managed ",  self.perform_sarsa(finish_time), "playouts."
 
         self.sm.update_bases(self.match.get_current_state())
         print "Printing action state values of current state..."
@@ -193,9 +193,9 @@ class SarsaPlayer(MatchPlayer):
                 print "action ", self.match.game_info.model.actions[role_index][ls.get_legal(act)], " value is ", self.sarsa_agents[role_index].value(state, act)
             print ""
         
-        print "EEF: " + str(self.expected_exploration())
-        print "Avg branching factor: " + str(self.average_branching_factor)
-        print "Avg depth: " + str(self.average_depth)
+        #print "EEF: " + str(self.expected_exploration())
+        #print "Avg branching factor: " + str(self.average_branching_factor)
+        #print "Avg depth: " + str(self.average_depth)
         ls = self.sm.get_legal_state(self.role)
         return self.sarsa_agents[self.role].policy(self.sm.get_current_state(), ls)
 
