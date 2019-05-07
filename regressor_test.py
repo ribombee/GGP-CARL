@@ -18,25 +18,7 @@ p1_type = "sarsa"
 p1_regressors = ["sgd", "mlp", "paggro"]
 
 p2_ip = sys.argv[2]
-    for start_clock in range(start_clock_min, start_clock_max, 300):
-
-        base_call_string = "python BatchGameRunner.py " + runs_per_permuation + " " + game + " " + start_clock + " " + play_clock + " " +\
-                            p1_ip + " " + p1_type + " " + p1_regressor + " " +\
-                            p2_ip + " " + p2_type + " " + p2_regressor + " " + expansions
-        process = subprocess.Popen(base_call_string + str(expansions), shell=True)
-        process.wait()    for start_clock in range(start_clock_min, start_clock_max, 300):
-
-        base_call_string = "python BatchGameRunner.py " + runs_per_permuation + " " + game + " " + start_clock + " " + play_clock + " " +\
-                            p1_ip + " " + p1_type + " " + p1_regressor + " " +\
-                            p2_ip + " " + p2_type + " " + p2_regressor + " " + expansions
-        process = subprocess.Popen(base_call_string + str(expansions), shell=True)
-        process.wait()    for start_clock in range(start_clock_min, start_clock_max, 300):
-
-        base_call_string = "python BatchGameRunner.py " + runs_per_permuation + " " + game + " " + start_clock + " " + play_clock + " " +\
-                            p1_ip + " " + p1_type + " " + p1_regressor + " " +\
-                            p2_ip + " " + p2_type + " " + p2_regressor + " " + expansions
-        process = subprocess.Popen(base_call_string + str(expansions), shell=True)
-        process.wait()p2_type = "mcts"
+p2_type = "mcts"
 p2_regressor = "sgd"
 
 expansions = -1

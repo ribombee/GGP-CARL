@@ -97,8 +97,8 @@ class BatchGameRunner:
 
             log_file.write("#Timestamp: " + timestamp + '\n')
             log_file.write("#Game name: " + self.game_name + '\n')
-            log_file.write("#Player 1: " + self.player1_type + '\n')
-            log_file.write("#Player 2: " + self.player2_type + '\n')
+            log_file.write("#Player 1: " + self.player1_type + ' ' + self.player1_regressor + '\n')
+            log_file.write("#Player 2: " + self.player2_type + ' ' + self.player2_regressor + '\n')
             log_file.write("#No. runs: " + str(self.runs) + '\n')
             log_file.write("#Max expansions: " + self.max_expansions + '\n')
             log_file.write("#Total runtime: N/A" + '\n') 
