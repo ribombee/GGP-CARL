@@ -7,7 +7,7 @@ class Client:
 		self.ssh = paramiko.SSHClient()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 		self.ssh.load_system_host_keys()
-		self.ssh.connect(hostname=self.ip)
+		self.ssh.connect(hostname=self.ip, timeout=10, auth_timeout=10, banner_timeout=10)
 		self.channel = self.ssh.invoke_shell()
 		self.buff = self.channel.recv(1024)
 
@@ -25,11 +25,17 @@ class Client:
 		self.channel.send(command)
 
 	def command(self, message, as_sudo = True):
-		command = message
+		fin_message = message
 		if as_sudo:
-			command = "sudo su;" + message
-		stdin, stdout, stderr = self.ssh.exec_command(command)
-		return stdout.read()
+			fin_message = ""
+			commands = message.split(";")
+			for command in commands:
+				if "~" in command:
+					command.replace("~", "/root")
+				command = "sudo " + command
+				fin_message += command + ";" 
+		#stdin, stdout, stderr = self.ssh.exec_command(command)
+		return fin_message
 
 class PlayerClient(Client):
 	def __init__(self, ip):
