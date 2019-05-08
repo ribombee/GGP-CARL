@@ -56,5 +56,6 @@ if __name__ == "__main__":
 	client.enter_project_dir()
 	client.update_player_repo()
 	client.shell_send("ls")
+	time.sleep(10)
 	print client.shell_receive()
 	#print client.command("cd ~; ls")
