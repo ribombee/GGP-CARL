@@ -25,17 +25,13 @@ class Client:
 		self.channel.send(command)
 
 	def command(self, message, as_sudo = True):
-		fin_message = message
+		command = message
 		if as_sudo:
-			fin_message = ""
-			commands = message.split(";")
-			for command in commands:
-				if "~" in command:
-					command.replace("~", "/root")
-				command = "sudo " + command
-				fin_message += command + ";" 
-		#stdin, stdout, stderr = self.ssh.exec_command(command)
-		return fin_message
+			if "~" in command:
+				command = command.replace("~", "/root")
+			command = "sudo sh -c \"" + message + "\""
+		_, stdout, _ = self.ssh.exec_command(command)
+		return stdout.read()
 
 class PlayerClient(Client):
 	def __init__(self, ip):
@@ -57,4 +53,8 @@ class PlayerClient(Client):
 
 if __name__ == "__main__":
 	client = PlayerClient(sys.argv[1])
-	print client.command("cd ~; ls")
+	client.enter_project_dir()
+	client.update_player_repo()
+	client.shell_send("ls")
+	print client.shell_receive()
+	#print client.command("cd ~; ls")
