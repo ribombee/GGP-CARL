@@ -74,12 +74,12 @@ class BatchGameRunner:
                     + self.player1_ip + " " + str(self.player1_port) + " " + self.player1_type + " " \
                     + self.player2_ip + " " + str(self.player2_port) + " " + self.player2_type + "\""
 
-        self.player1_client = PlayerClient(self.player1_ip, "koder")
+        self.player1_client = PlayerClient(self.player1_ip)
         self.player1_client.enter_project_dir()
         self.player1_client.update_player_repo()
         self.player1_client.start_player(self.player1_type, self.player1_regressor, self.player1_port, self.max_expansions)
         
-        self.player2_client = PlayerClient(self.player2_ip, "koder")
+        self.player2_client = PlayerClient(self.player2_ip)
         self.player2_client.enter_project_dir()
         self.player2_client.update_player_repo()
         self.player2_client.start_player(self.player2_type, self.player2_regressor,  self.player2_port, self.max_expansions)

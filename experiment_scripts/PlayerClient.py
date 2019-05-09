@@ -25,7 +25,7 @@ class Client:
 		self.channel.send(command)
 
 	def command(self, message):
-		stdin, stdout, stderr = self.ssh.exec_command(message)
+		_, stdout, _ = self.ssh.exec_command(message)
 		return stdout.read()
 
 class PlayerClient(Client):
