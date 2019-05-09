@@ -52,6 +52,7 @@ def main():
 
         if regressor is None:
             print("Invalid regressor given, please choose from the following: sgd, mlp, paggro, knn, hoeffding, forest, bagging")
+            exit()
     else:
         regressor = SGDRegressor()
 

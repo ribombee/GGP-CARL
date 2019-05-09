@@ -312,12 +312,13 @@ class CarlPlayer(MatchPlayer):
 
     #----GGPLIB
 
-    def __init__(self, selection_policy_type, playout_policy_type, estimator, max_expansions=100000, name=None):
+    def __init__(self, selection_policy_type, playout_policy_type, estimator, max_expansions=100000, name=None, keep_estimators=False):
         super(CarlPlayer, self).__init__(name)
         self.selection_policy_type = selection_policy_type
         self.playout_policy_type = playout_policy_type
         self.estimator = estimator
         self.max_expansions = max_expansions
+        self.keep_estimators = keep_estimators
 
     def reset(self, match):
         self.role = match.our_role_index

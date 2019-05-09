@@ -133,8 +133,8 @@ class BatchGameRunner:
         self.start_clock = start_clock
         self.play_clock = play_clock
         
-        self.player1 = Player_info(*player1_data)
-        self.player2 = Player_info(*player2_data)
+        self.player1 = player1_data
+        self.player2 = player2_data
         
         self.max_expansions = max_expansions
         
