@@ -11,8 +11,8 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import PassiveAggressiveRegressor
 
-from SarsaPlayer import SarsaPlayer
-from CarlPlayer import CarlPlayer
+from player.SarsaPlayer import SarsaPlayer
+from player.CarlPlayer import CarlPlayer
 from ggplib.player.random_player import RandomPlayer 
 
 def play_runner(player, port):

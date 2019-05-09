@@ -3,8 +3,6 @@ warnings.filterwarnings(action='ignore', module ='paramiko')
 
 class Client:
 	def __init__(self, ip, password = None):
-		if password is None:
-			password = raw_input("Enter ssh password")
 		self.ip = ip
 		self.pw = password
 		self.ssh = paramiko.SSHClient()
