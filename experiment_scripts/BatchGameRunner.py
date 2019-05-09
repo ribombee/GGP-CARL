@@ -4,15 +4,20 @@
 import subprocess, os, sys, time, datetime, csv, json, fileinput
 from PlayerClient import PlayerClient
 
-
+class Player_info:
+        def __init__(self, ip, p_type, port, regressor="sgd", client=None):
+            self.ip = ip
+            self.type = p_type
+            self.port = port
+            self.regressor = regressor
+            self.client = client
 
 class BatchGameRunner:
-    runs = 0
     game_name = ""
     start_clock = ""
     play_clock = ""
-    player1_ip, player1_type, player1_port, player1_regressor, player1_client = "", "", 0, "sgd", None
-    player2_ip, player2_type, player2_port, player2_regressor, player2_client = "", "", 0, "sgd", None
+    player1 = None
+    player2 = None
     command = ""
     ggp_base_path = ""
     ggp_base_results_file = "results"
@@ -20,7 +25,7 @@ class BatchGameRunner:
     filepath = ""
     max_expansions = -1
 
-    
+    #---- File IO
     def get_file_suffix(self, filename):
         stripped = filter(lambda x : x.isdigit(), filename)
         return stripped
@@ -36,70 +41,19 @@ class BatchGameRunner:
                 file_count = int(self.get_file_suffix(filename))
                 if file_count > highest_count:
                     highest_count = file_count
-        return highest_count + 1
-
-    def setup(self):
-        #Saving environment variables as a dict
-        environment_vars = os.environ.copy()
-
-        if len(sys.argv) < 9:
-            print("Error: Invalid arguments. Usage:")
-            print("<nr. of runs> <game key> <start clock> <play clock> <player 1 IP> <player 1 type> <player 1 regressor>* <player 2 IP> <player 2 type> <player 2 regressor>* <max expansions>*")
-            print("*optional, all must be set if used")
-            print("Example: ticTacToe 20 10 127.0.0.1 random 127.0.0.1 random")
-            exit()
-        
-        self.runs = int(sys.argv[1])
-        self.game_name = sys.argv[2]
-        self.start_clock = sys.argv[3]
-        self.play_clock = sys.argv[4]
-
-        if len(sys.argv) >= 12:
-            self.player1_ip, self.player1_type, self.player1_port, self.player1_regressor = sys.argv[5], sys.argv[6], 1337, sys.argv[7]
-            self.player2_ip, self.player2_type, self.player2_port, self.player2_regressor = sys.argv[8], sys.argv[9], 1337, sys.argv[10]
-            self.max_expansions = sys.argv[11]
-        else:
-            self.player1_ip, self.player1_type, self.player1_port = sys.argv[5], sys.argv[6], 1337
-            self.player2_ip, self.player2_type, self.player2_port = sys.argv[7], sys.argv[8], 1337
-        
-
-        #If players are on same address, make player 2 use a different port
-        if self.player1_ip == self.player2_ip:
-            self.player2_port = 1338
-        
-        self.ggp_base_path = environment_vars["GGPLIB_PATH"] + "/ggp-base"
-        server_command = "./gradlew gameServerRunner"
-
-        self.command = server_command + " -Pmyargs=\"" + "results" + " " + self.game_name + " " + self.start_clock + " " + self.play_clock + " " \
-                    + self.player1_ip + " " + str(self.player1_port) + " " + self.player1_type + " " \
-                    + self.player2_ip + " " + str(self.player2_port) + " " + self.player2_type + "\""
-
-        self.player1_client = PlayerClient(self.player1_ip)
-        self.player1_client.enter_project_dir()
-        self.player1_client.update_player_repo()
-        self.player1_client.start_player(self.player1_type, self.player1_regressor, self.player1_port, self.max_expansions)
-        
-        self.player2_client = PlayerClient(self.player2_ip)
-        self.player2_client.enter_project_dir()
-        self.player2_client.update_player_repo()
-        self.player2_client.start_player(self.player2_type, self.player2_regressor,  self.player2_port, self.max_expansions)
-
-
-        filename = self.game_name + "_" + self.player1_type + "_" + self.player2_type + "_"
-        filename += str(self.choose_file_suffix(filename)) + ".csv"
-        self.filepath = self.filedir + filename
+        return highest_count + 1     
 
     #Write metadata header to csv file
-    def write_metadata(self):
+    def write_metadata(self, runs):
         ts = time.time()
         timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         with open(self.filepath, 'a') as log_file:
 
             log_file.write("#Timestamp: " + timestamp + '\n')
             log_file.write("#Game name: " + self.game_name + '\n')
-            log_file.write("#Player 1: " + self.player1_type + ' ' + self.player1_regressor + '\n')
-            log_file.write("#Player 2: " + self.player2_type + ' ' + self.player2_regressor + '\n')
-            log_file.write("#No. runs: " + str(self.runs) + '\n')
+            log_file.write("#Player 1: " + self.player1.type + ' ' + self.player1.regressor + '\n')
+            log_file.write("#Player 2: " + self.player2.type + ' ' + self.player2.regressor + '\n')
+            log_file.write("#No. runs: " + str(runs) + '\n')
             log_file.write("#Max expansions: " + self.max_expansions + '\n')
             log_file.write("#Total runtime: N/A" + '\n') 
             log_file.write("#Start clock: " + self.start_clock + '\n')
@@ -134,8 +88,8 @@ class BatchGameRunner:
         else:
             winner = "Player 2"
 
-        p1_data = self.player1_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
-        p2_data = self.player2_client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        p1_data = self.player1.client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        p2_data = self.player2.client.command("cat ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
 
         with open(self.filepath, 'a') as log_file:
             log_file.write(winner + ',')
@@ -145,8 +99,8 @@ class BatchGameRunner:
             log_file.write(p2_data +  ',')
             log_file.write(str(move_count) + '\n')
 
-        self.player1_client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
-        self.player2_client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        self.player1.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+        self.player2.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
 
     #Get final rewards for each player and total move count from json string
     def get_server_json(self, remove_file = True):
@@ -166,11 +120,45 @@ class BatchGameRunner:
             remove_process.wait()
         return goals, move_count
 
-    def run_tests(self):
-        self.write_metadata()
+    #---- Experiment execution
+
+    def start_player(self, player):
+        player.client = PlayerClient(player.ip)
+        player.client.enter_project_dir()
+        player.client.update_player_repo()
+        player.client.start_player(player.type, player.regressor, player.port, self.max_expansions)
+
+    def setup(self, game, start_clock, play_clock, player1_data, player2_data, max_expansions=-1):
+        self.game_name = game
+        self.start_clock = start_clock
+        self.play_clock = play_clock
+        
+        self.player1 = Player_info(*player1_data)
+        self.player2 = Player_info(*player2_data)
+        
+        self.max_expansions = max_expansions
+        
+        #Saving environment variables as a dict
+        environment_vars = os.environ.copy()
+        self.ggp_base_path = environment_vars["GGPLIB_PATH"] + "/ggp-base"
+        server_command = "./gradlew gameServerRunner"
+
+        self.command = server_command + " -Pmyargs=\"" + "results" + " " + self.game_name + " " + self.start_clock + " " + self.play_clock + " " \
+                    + self.player1.ip + " " + str(self.player1.port) + " " + self.player1.type + " " \
+                    + self.player2.ip + " " + str(self.player2.port) + " " + self.player2.type + "\""
+
+        self.start_player(self.player1)
+        self.start_player(self.player2)
+
+        filename = self.game_name + "_" + self.player1.type + "_" + self.player2.type + "_"
+        filename += str(self.choose_file_suffix(filename)) + ".csv"
+        self.filepath = self.filedir + filename
+
+    def run_tests(self, runs):
+        self.write_metadata(runs)
         self.time_start = time.time()
 
-        for iteration in range(self.runs):
+        for iteration in range(runs):
             process = subprocess.Popen(self.command, cwd=self.ggp_base_path, shell=True)
             process.wait()
 
@@ -182,7 +170,16 @@ class BatchGameRunner:
         print "Batch run finished."
 
 if __name__ == "__main__":
+    '''
+    if len(sys.argv) < 9:
+        print("Error: Invalid arguments. Usage:")
+        print("<nr. of runs> <game key> <start clock> <play clock> <player 1 IP> <player 1 type> <player 1 regressor>* <player 2 IP> <player 2 type> <player 2 regressor>* <max expansions>*")
+        print("*optional, all must be set if used")
+        print("Example: ticTacToe 20 10 127.0.0.1 random 127.0.0.1 random")
+        exit()
+    '''
+
     gameRunner = BatchGameRunner()
-    gameRunner.setup()
-    gameRunner.run_tests()
+    gameRunner.setup("connectFour", 10, 10, ("p1_ip", "sarsa", 1337), ("p2_ip", "mcts", 1337))
+    gameRunner.run_tests(10)
     

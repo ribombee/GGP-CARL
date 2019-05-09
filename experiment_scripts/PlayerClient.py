@@ -39,7 +39,7 @@ class PlayerClient(Client):
 		self.shell_send("git pull")
         time.sleep(3)
 
-	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_expansions = 100000):
+	def start_player(self, player_type, regressor_type = "sgd", port = 1337, max_expansions = -1):
 		self.shell_send('python play.py ' + player_type + ' ' + str(port) + ' ' + regressor_type + ' ' + str(max_expansions)) 
 
 	def stop_player(self):
