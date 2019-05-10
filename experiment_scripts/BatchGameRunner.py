@@ -157,7 +157,7 @@ class BatchGameRunner:
         self.write_metadata(runs)
         time.sleep(5)
         self.time_start = time.time()
-
+        self.start_clock = start_clock
         command = self.constuct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
         for iteration in range(runs):
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
@@ -175,7 +175,7 @@ class BatchGameRunner:
         self.write_metadata(len(run_list))
         time.sleep(5)
         self.time_start = time.time()
-
+        self.start_clock = run_list[0]
         for run_ind in len(run_list):
             command = self.constuct_server_command(self.game_name, run_list[run_ind], self.play_clock, self.player1, self.player2)
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
