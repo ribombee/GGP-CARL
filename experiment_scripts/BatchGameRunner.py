@@ -42,7 +42,7 @@ class BatchGameRunner:
         return highest_count + 1     
 
     #Write metadata header to csv file
-    def write_metadata(self, runs):
+    def write_metadata(self, runs, start_clock):
         ts = time.time()
         timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         with open(self.filepath, 'a') as log_file:
@@ -54,7 +54,7 @@ class BatchGameRunner:
             log_file.write("#No. runs: " + str(runs) + '\n')
             log_file.write("#Max expansions: " + str(self.max_expansions) + '\n')
             log_file.write("#Total runtime: N/A" + '\n') 
-            log_file.write("#Start clock: N/A" + '\n')
+            log_file.write("#Start clock: " + start_clock + '\n')
             log_file.write("#Play clock: " + self.play_clock + '\n')
             log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
 
@@ -163,10 +163,9 @@ class BatchGameRunner:
         self.filepath = self.filedir + filename
 
     def run_tests(self, runs, start_clock):
-        self.write_metadata(runs)
+        self.write_metadata(runs, start_clock)
         time.sleep(5)
         self.time_start = time.time()
-        self.set_start_clock(start_clock)
         command = self.constuct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
         for iteration in range(runs):
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
@@ -182,11 +181,10 @@ class BatchGameRunner:
     def run_tests_from_list(self, run_list):
         #Run_list is a list of startclocks.
         list_length = len(run_list)
-        self.write_metadata(list_length)
+        self.write_metadata(list_length, str(run_list[0]))
         time.sleep(5)
         
         self.time_start = time.time()
-        self.set_start_clock(str(run_list[0]))
 
         for run_ind in range(list_length):
             command = self.constuct_server_command(self.game_name, str(run_list[run_ind]), self.play_clock, self.player1, self.player2)
@@ -204,6 +202,6 @@ class BatchGameRunner:
 if __name__ == "__main__":
 
     gameRunner = BatchGameRunner()
-    gameRunner.setup("connectFour", 10, 10, ("p1_ip", "sarsa", 1337), ("p2_ip", "mcts", 1337))
-    gameRunner.run_tests(10)
+    #gameRunner.setup("connectFour", 10, 10, ("p1_ip", "sarsa", 1337), ("p2_ip", "mcts", 1337))
+    #gameRunner.run_tests(10)
     
