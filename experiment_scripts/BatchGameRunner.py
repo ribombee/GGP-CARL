@@ -185,6 +185,7 @@ class BatchGameRunner:
         time.sleep(5)
         self.time_start = time.time()
         self.set_start_clock(str(run_list[0]))
+        
         for run_ind in len(run_list):
             command = self.constuct_server_command(self.game_name, run_list[run_ind], self.play_clock, self.player1, self.player2)
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
