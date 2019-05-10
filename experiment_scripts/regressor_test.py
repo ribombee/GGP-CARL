@@ -28,7 +28,7 @@ games_per_model = 100
 
 for p1_regressor in p1_regressors:
     for start_clock in start_clock_test_list:
-        start_clock_list = [start_clock]+[5]*(games_per_model-1)
+        start_clock_list = [start_clock]+[3]*(games_per_model-1)
         game_runner = BatchGameRunner()
         game_runner.setup(game, play_clock, Player_info(p1_ip, p1_type, p1_port, p1_regressor), Player_info(p2_ip, p2_type, p2_port, p2_regressor), expansions)
 

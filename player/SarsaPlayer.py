@@ -37,6 +37,7 @@ class SarsaPlayer(MatchPlayer):
                 #Restart sarsa agents
                 self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
 
+        self.error_list = []
         self.error_over_time = 0
         self.sarsa_expansions = 0
         self.average_branching_factor = 0
