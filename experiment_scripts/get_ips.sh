@@ -1,0 +1,1 @@
+gcloud --format="value(networkInterfaces[0].accessConfigs[0].natIP)" compute instances list | paste - - > ip_file
