@@ -181,12 +181,14 @@ class BatchGameRunner:
     
     def run_tests_from_list(self, run_list):
         #Run_list is a list of startclocks.
-        self.write_metadata(len(run_list))
+        list_length = len(run_list)
+        self.write_metadata(list_length)
         time.sleep(5)
+        
         self.time_start = time.time()
         self.set_start_clock(str(run_list[0]))
-        
-        for run_ind in len(run_list):
+
+        for run_ind in range(list_length):
             command = self.constuct_server_command(self.game_name, run_list[run_ind], self.play_clock, self.player1, self.player2)
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
             process.wait()
