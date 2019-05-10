@@ -14,11 +14,9 @@ class Player_info:
 
 class BatchGameRunner:
     game_name = ""
-    start_clock = ""
     play_clock = ""
     player1 = None
     player2 = None
-    command = ""
     ggp_base_path = ""
     ggp_base_results_file = "results"
     filedir = "logs/"
@@ -121,16 +119,20 @@ class BatchGameRunner:
         return goals, move_count
 
     #---- Experiment execution
-
+    def constuct_server_command(self, game, start_clock, play_clock, player1, player2):
+        command = self.gradle_command + " -Pmyargs=\"" + "results" + " " + game + " " + start_clock + " " + play_clock + " " \
+                    + player1.ip + " " + str(player1.port) + " " + player1.type + " " \
+                    + player2.ip + " " + str(player2.port) + " " + player2.type + "\""
+        return command
+        
     def start_player(self, player, password):
         player.client = PlayerClient(player.ip, password)
         player.client.enter_project_dir()
         player.client.update_player_repo()
         player.client.start_player(player.type, player.regressor, player.port, self.max_expansions)
 
-    def setup(self, game, start_clock, play_clock, player1_data, player2_data, max_expansions=-1, password=None):
+    def setup(self, game, play_clock, player1_data, player2_data, max_expansions=-1, password=None):
         self.game_name = game
-        self.start_clock = start_clock
         self.play_clock = play_clock
         
         self.player1 = player1_data
@@ -141,11 +143,8 @@ class BatchGameRunner:
         #Saving environment variables as a dict
         environment_vars = os.environ.copy()
         self.ggp_base_path = environment_vars["GGPLIB_PATH"] + "/ggp-base"
-        server_command = "./gradlew gameServerRunner"
+        self.gradle_command = "./gradlew gameServerRunner"
 
-        self.command = server_command + " -Pmyargs=\"" + "results" + " " + self.game_name + " " + self.start_clock + " " + self.play_clock + " " \
-                    + self.player1.ip + " " + str(self.player1.port) + " " + self.player1.type + " " \
-                    + self.player2.ip + " " + str(self.player2.port) + " " + self.player2.type + "\""
 
         self.start_player(self.player1, password)
         self.start_player(self.player2, password)
@@ -154,14 +153,15 @@ class BatchGameRunner:
         filename += str(self.choose_file_suffix(filename)) + ".csv"
         self.filepath = self.filedir + filename
 
-    def run_tests(self, runs):
+    def run_tests(self, runs, start_clock):
         self.write_metadata(runs)
+        time.sleep(5)
         self.time_start = time.time()
 
+        command = self.constuct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
         for iteration in range(runs):
-            process = subprocess.Popen(self.command, cwd=self.ggp_base_path, shell=True)
+            process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
             process.wait()
-            time.sleep(5)
 
             self.write_game()
 
@@ -169,6 +169,25 @@ class BatchGameRunner:
             self.update_total_runtime()
 
         print "Batch run finished."
+    
+    def run_tests_from_list(self, run_list):
+        #Run_list is a list of startclocks.
+        self.write_metadata(len(run_list))
+        time.sleep(5)
+        self.time_start = time.time()
+
+        for run_ind in len(run_list):
+            command = self.constuct_server_command(self.game_name, run_list[run_ind], self.play_clock, self.player1, self.player2)
+            process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
+            process.wait()
+
+            self.write_game()
+
+            print "Run #" + str(run_ind+1) +" finished!"
+            self.update_total_runtime()
+
+        print "Batch run finished."
+
 
 if __name__ == "__main__":
 

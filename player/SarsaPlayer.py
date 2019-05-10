@@ -6,7 +6,7 @@ from sklearn.base import clone
 from ggplib.player.base import MatchPlayer
 
 class SarsaPlayer(MatchPlayer):
-    def __init__(self, estimator, log_to_file = False, name=None):
+    def __init__(self, estimator, log_to_file = False, name=None, estimator_persist = False):
         super(SarsaPlayer, self).__init__(name)
         self.sarsa_agents = {}
         self.role = 0
@@ -19,19 +19,28 @@ class SarsaPlayer(MatchPlayer):
         self.average_branching_factor = 0
         self.average_depth = 0
         self.estimator = estimator
+        self.estimator_persist = estimator_persist
 
     def reset(self, match):
         self.sm = match.sm.dupe()
-        self.role_count = len(match.sm.get_roles())
+
         self.role = match.our_role_index
+        self.role_count = len(match.sm.get_roles())
+
+        if self.estimator_persist:
+            if self.match is None or not self.match.game_info.game == match.game_info.game:
+                for role_index in range(self.role_count):
+                    #Restart sarsa agents
+                    self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
+        else:
+            for role_index in range(self.role_count):
+                #Restart sarsa agents
+                self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
+
         self.error_over_time = 0
         self.sarsa_expansions = 0
         self.average_branching_factor = 0
         self.average_depth = 0
-        role_count = len(match.sm.get_roles())
-        for role_index in range(role_count):
-            #Restart sarsa agents
-            self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
 
         self.match = match
 

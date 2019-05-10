@@ -6,6 +6,7 @@ class Client:
 		self.ip = ip
 		self.pw = password
 		self.ssh = paramiko.SSHClient()
+		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 		self.ssh.load_system_host_keys()
 		self.ssh.connect(hostname=self.ip, password=self.pw)
 		self.channel = self.ssh.invoke_shell()
