@@ -10,15 +10,13 @@ from BatchGameRunner import Player_info
 class Regressor_test:
         def __init__(self, p1_ip, p2_ip = None):
                 self.game = "connectFour"
-                #self.start_clock_test_list = [300,600,1200]
-                self.start_clock_test_list = [20]
+                self.start_clock_test_list = [300,600,1200]
                 self.play_clock = "120" #this amount of time should be excessive
 
                 self.p1_ip = p1_ip
                 self.p1_type = "sarsa"
                 self.p1_port = 1337
-                #self.p1_regressors = ["sgd", "mlp", "paggro"]
-                self.p1_regressors = ["sgd"]
+                self.p1_regressors = ["sgd", "mlp", "paggro"]
 
 
                 self.p2_ip = p1_ip if p2_ip is None else p2_ip
@@ -29,9 +27,7 @@ class Regressor_test:
                 self.expansions = 1000
                 
                 self.runs_per_permuation = 1
-                self.games_per_model = 4
-                #self.runs_per_permuation = 6
-                #self.games_per_model = 100
+                self.games_per_model = 100
 
         def start_test(self):
                 for p1_regressor in self.p1_regressors:
