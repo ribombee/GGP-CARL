@@ -19,7 +19,7 @@ if __name__ == "__main__":
         print "starting thread " + str(index)
         thread = threading.Thread(target=regression_test_launcher, args=(ip_set[0],ip_set[1]))
         thread.start()
-        time.sleep(0.5)
+        time.sleep(15)
         thread_pool.append(thread)
 
     for index, thread in enumerate(thread_pool):
