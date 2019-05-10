@@ -54,7 +54,7 @@ class BatchGameRunner:
             log_file.write("#No. runs: " + str(runs) + '\n')
             log_file.write("#Max expansions: " + str(self.max_expansions) + '\n')
             log_file.write("#Total runtime: N/A" + '\n') 
-            log_file.write("#Start clock: " + self.start_clock + '\n')
+            log_file.write("#Start clock: N/A" + '\n')
             log_file.write("#Play clock: " + self.play_clock + '\n')
             log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
 
@@ -65,6 +65,15 @@ class BatchGameRunner:
         for line in file:
             if '#Total runtime: ' in line:
                 sys.stdout.write('#Total runtime: ' + time_now + '\n')
+            else:
+                sys.stdout.write(line)
+    
+    def set_start_clock(self, start_clock):
+        file = fileinput.FileInput(self.filepath, inplace=True)
+        
+        for line in file:
+            if '#Start_clock: ' in line:
+                sys.stdout.write('#Start_clock: ' + start_clock + '\n')
             else:
                 sys.stdout.write(line)
 
@@ -157,7 +166,7 @@ class BatchGameRunner:
         self.write_metadata(runs)
         time.sleep(5)
         self.time_start = time.time()
-        self.start_clock = start_clock
+        self.set_start_clock(start_clock)
         command = self.constuct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
         for iteration in range(runs):
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
@@ -175,7 +184,7 @@ class BatchGameRunner:
         self.write_metadata(len(run_list))
         time.sleep(5)
         self.time_start = time.time()
-        self.start_clock = run_list[0]
+        self.set_start_clock(str(run_list[0]))
         for run_ind in len(run_list):
             command = self.constuct_server_command(self.game_name, run_list[run_ind], self.play_clock, self.player1, self.player2)
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
