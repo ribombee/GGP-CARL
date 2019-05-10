@@ -51,7 +51,8 @@ class SarsaPlayer(MatchPlayer):
         self.last_move = self.sm.get_joint_move()
         self.last_state = self.sm.new_base_state()
 
-        if finish_time > 7 or not self.keep_estimators:
+        time_to_train = finish_time - time.time()
+        if time_to_train > 7 or not self.keep_estimators:
             self.perform_sarsa(finish_time)
 
     def cleanup(self):
