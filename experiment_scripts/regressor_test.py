@@ -6,30 +6,41 @@
 import sys, subprocess
 from BatchGameRunner import BatchGameRunner
 from BatchGameRunner import Player_info
-game = "connectFour"
-start_clock_test_list = [300,600,1200]
-play_clock = "120" #this amount of time should be excessive
 
-p1_ip = sys.argv[1]
-p1_type = "sarsa"
-p1_port = 1337
-p1_regressors = ["sgd", "mlp", "paggro"]
+class Regressor_test:
+        def __init__(self, p1_ip, p2_ip = None):
+                self.game = "connectFour"
+                #self.start_clock_test_list = [300,600,1200]
+                self.start_clock_test_list = [20]
+                self.play_clock = "120" #this amount of time should be excessive
+
+                self.p1_ip = p1_ip
+                self.p1_type = "sarsa"
+                self.p1_port = 1337
+                #self.p1_regressors = ["sgd", "mlp", "paggro"]
+                self.p1_regressors = ["sgd"]
 
 
-p2_ip = sys.argv[1] if len(sys.argv) == 2 else sys.argv[2]
-p2_type = "mcts"
-p2_port = 1337 if not p2_ip == p1_ip else 1338 
-p2_regressor = "sgd"
+                self.p2_ip = p1_ip if p2_ip is None else p2_ip
+                self.p2_type = "mcts"
+                self.p2_port = 1337 if not p2_ip == p1_ip else 1338 
+                self.p2_regressor = "sgd"
 
-expansions = 1000
+                self.expansions = 1000
+                
+                self.runs_per_permuation = 1
+                self.games_per_model = 4
+                #self.runs_per_permuation = 6
+                #self.games_per_model = 100
 
-runs_per_permuation = 6
-games_per_model = 100
+        def start_test(self):
+                for p1_regressor in self.p1_regressors:
+                        for start_clock in self.start_clock_test_list:
+                                start_clock_list = [start_clock]+[3]*(self.games_per_model-1)
+                                game_runner = BatchGameRunner()
+                                game_runner.setup(self.game, self.play_clock, Player_info(self.p1_ip, self.p1_type, self.p1_port, p1_regressor), Player_info(self.p2_ip, self.p2_type, self.p2_port, self.p2_regressor), self.expansions)
+                                game_runner.run_tests_from_list(start_clock_list)
 
-for p1_regressor in p1_regressors:
-    for start_clock in start_clock_test_list:
-        start_clock_list = [start_clock]+[3]*(games_per_model-1)
-        game_runner = BatchGameRunner()
-        game_runner.setup(game, play_clock, Player_info(p1_ip, p1_type, p1_port, p1_regressor), Player_info(p2_ip, p2_type, p2_port, p2_regressor), expansions)
-
-        game_runner.run_tests_from_list(start_clock_list)
+if __name__ == "__main__":
+    test = Regressor_test(sys.argv[0])
+    test.start_test()
