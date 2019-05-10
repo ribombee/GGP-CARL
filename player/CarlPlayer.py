@@ -312,7 +312,7 @@ class CarlPlayer(MatchPlayer):
 
     #----GGPLIB
 
-    def __init__(self, selection_policy_type, playout_policy_type, estimator, max_expansions=100000, name=None, keep_estimators=False):
+    def __init__(self, selection_policy_type, playout_policy_type, estimator, max_expansions=100000, name=None, keep_estimators=True):
         super(CarlPlayer, self).__init__(name)
         self.selection_policy_type = selection_policy_type
         self.playout_policy_type = playout_policy_type

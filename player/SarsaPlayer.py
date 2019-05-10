@@ -6,7 +6,7 @@ from sklearn.base import clone
 from ggplib.player.base import MatchPlayer
 
 class SarsaPlayer(MatchPlayer):
-    def __init__(self, estimator, log_to_file = False, name=None, estimator_persist = False):
+    def __init__(self, estimator, log_to_file = False, name=None, keep_estimators = True):
         super(SarsaPlayer, self).__init__(name)
         self.sarsa_agents = {}
         self.role = 0
@@ -19,7 +19,7 @@ class SarsaPlayer(MatchPlayer):
         self.average_branching_factor = 0
         self.average_depth = 0
         self.estimator = estimator
-        self.estimator_persist = estimator_persist
+        self.keep_estimators = keep_estimators
 
     def reset(self, match):
         self.sm = match.sm.dupe()
@@ -27,7 +27,7 @@ class SarsaPlayer(MatchPlayer):
         self.role = match.our_role_index
         self.role_count = len(match.sm.get_roles())
 
-        if self.estimator_persist:
+        if self.keep_estimators:
             if self.match is None or not self.match.game_info.game == match.game_info.game:
                 for role_index in range(self.role_count):
                     #Restart sarsa agents
@@ -50,7 +50,8 @@ class SarsaPlayer(MatchPlayer):
         self.last_move = self.sm.get_joint_move()
         self.last_state = self.sm.new_base_state()
 
-        self.perform_sarsa(finish_time)
+        if finish_time > 7 or not self.keep_estimators:
+            self.perform_sarsa(finish_time)
 
     def cleanup(self):
         log_to_csv(self)
