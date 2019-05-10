@@ -7,10 +7,8 @@ import sys, subprocess
 from BatchGameRunner import BatchGameRunner
 from BatchGameRunner import Player_info
 game = "connectFour"
-start_clock_min = 300
-start_clock_max = 1800
-start_clock_step = 300
-play_clock = "30" #this amount of time should be excessive
+start_clock_list = [300,600,1200]
+play_clock = "120" #this amount of time should be excessive
 
 p1_ip = sys.argv[1]
 p1_type = "sarsa"
@@ -25,10 +23,10 @@ p2_regressor = "sgd"
 
 expansions = 1000
 
-runs_per_permuation = 30
+runs_per_permuation = 6
 
 for p1_regressor in p1_regressors:
-    for start_clock in range(start_clock_min, start_clock_max, start_clock_step):
+    for start_clock in start_clock_list:
         game_runner = BatchGameRunner()
         game_runner.setup(game, str(start_clock), play_clock, Player_info(p1_ip, p1_type, p1_port, p1_regressor), Player_info(p2_ip, p2_type, p2_port, p2_regressor), expansions)
         game_runner.run_tests(runs_per_permuation)

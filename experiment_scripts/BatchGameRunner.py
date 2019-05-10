@@ -122,13 +122,13 @@ class BatchGameRunner:
 
     #---- Experiment execution
 
-    def start_player(self, player):
-        player.client = PlayerClient(player.ip)
+    def start_player(self, player, password):
+        player.client = PlayerClient(player.ip, password)
         player.client.enter_project_dir()
         player.client.update_player_repo()
         player.client.start_player(player.type, player.regressor, player.port, self.max_expansions)
 
-    def setup(self, game, start_clock, play_clock, player1_data, player2_data, max_expansions=-1):
+    def setup(self, game, start_clock, play_clock, player1_data, player2_data, max_expansions=-1, password=None):
         self.game_name = game
         self.start_clock = start_clock
         self.play_clock = play_clock
@@ -147,8 +147,8 @@ class BatchGameRunner:
                     + self.player1.ip + " " + str(self.player1.port) + " " + self.player1.type + " " \
                     + self.player2.ip + " " + str(self.player2.port) + " " + self.player2.type + "\""
 
-        self.start_player(self.player1)
-        self.start_player(self.player2)
+        self.start_player(self.player1, password)
+        self.start_player(self.player2, password)
 
         filename = self.game_name + "_" + self.player1.type + "_" + self.player2.type + "_"
         filename += str(self.choose_file_suffix(filename)) + ".csv"
@@ -161,6 +161,7 @@ class BatchGameRunner:
         for iteration in range(runs):
             process = subprocess.Popen(self.command, cwd=self.ggp_base_path, shell=True)
             process.wait()
+            time.sleep(5)
 
             self.write_game()
 
@@ -170,14 +171,6 @@ class BatchGameRunner:
         print "Batch run finished."
 
 if __name__ == "__main__":
-    '''
-    if len(sys.argv) < 9:
-        print("Error: Invalid arguments. Usage:")
-        print("<nr. of runs> <game key> <start clock> <play clock> <player 1 IP> <player 1 type> <player 1 regressor>* <player 2 IP> <player 2 type> <player 2 regressor>* <max expansions>*")
-        print("*optional, all must be set if used")
-        print("Example: ticTacToe 20 10 127.0.0.1 random 127.0.0.1 random")
-        exit()
-    '''
 
     gameRunner = BatchGameRunner()
     gameRunner.setup("connectFour", 10, 10, ("p1_ip", "sarsa", 1337), ("p2_ip", "mcts", 1337))
