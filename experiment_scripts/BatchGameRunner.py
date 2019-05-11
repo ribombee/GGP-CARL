@@ -18,7 +18,7 @@ class BatchGameRunner:
     player1 = None
     player2 = None
     ggp_base_path = ""
-    server_folder_id = "results"
+    server_folder_id = ""
     result_dir = "logs/"
     filepath = ""
     max_expansions = -1

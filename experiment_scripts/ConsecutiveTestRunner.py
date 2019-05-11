@@ -3,7 +3,7 @@ from regressor_test import Regressor_test
 
 def regression_test_launcher(ip1, ip2, thread_id):
     try:
-        test = Regressor_test(ip1, ip2, thread_id)
+        test = Regressor_test(ip1, ip2, server_results_folder=thread_id)
         test.start_test()
     except:
         logging.exception("\n**********************EXCEPTION IN THREAD " + thread_id +  " **********************\n")
@@ -14,7 +14,7 @@ def random_string(length=6):
     return random_string
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='errors.log',level=logging.DEBUG)
+    logging.basicConfig(filename='errors.log',level=logging.ERROR)
     ips_path = sys.argv[1]
     ip_sets = []
     with open(ips_path, 'r') as ip_file:
