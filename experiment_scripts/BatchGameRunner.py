@@ -112,9 +112,11 @@ class BatchGameRunner:
     def select_oldest_json(self, origin):
         filenames = os.listdir(origin)
         filenames = filter(lambda x: '.json' in x, filenames)
+
+        #Sort the file by age (it is written into the header). 
+        #List is sorted in ascending order, meaning oldest files first
         file_age = lambda x: int(self.strip_to_digits(x))
         filenames.sort(key=file_age)
-        print filenames
         return filenames[0]
 
     #Get final rewards for each player and total move count from json string
