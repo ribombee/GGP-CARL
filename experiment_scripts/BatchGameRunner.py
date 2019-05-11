@@ -100,14 +100,22 @@ class BatchGameRunner:
 
         with open(self.filepath, 'a') as log_file:
             log_file.write(winner + ',')
-            #log_file.write(self.process_player_data(p1_data) +  ',')
-            #log_file.write(self.process_player_data(p2_data) +  ',')
             log_file.write(p1_data +  ',')
             log_file.write(p2_data +  ',')
             log_file.write(str(move_count) + '\n')
 
         self.player1.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
         self.player2.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
+
+    #make a folder with the server id, for gameServerRunner to put results into
+    def make_server_folder(self):
+        path = self.ggp_base_path + "/" + self.server_folder_id
+        if not os.path.isdir(path):
+            os.mkdir(path)
+    #def remove_server_folder():
+    #    path = self.ggp_base_path + "/" + self.server_folder_id
+    #    if os.path.isdir(path):
+    #        os.rmdir
 
     def select_oldest_json(self, origin):
         filenames = os.listdir(origin)
@@ -172,6 +180,7 @@ class BatchGameRunner:
         self.filepath = self.result_dir + filename
 
     def run_tests(self, runs, start_clock):
+        self.make_server_folder()
         self.write_metadata(runs, start_clock)
         time.sleep(5)
         self.time_start = time.time()
@@ -188,6 +197,7 @@ class BatchGameRunner:
         print "Batch run finished."
     
     def run_tests_from_list(self, run_list):
+        self.make_server_folder()
         #Run_list is a list of startclocks.
         list_length = len(run_list)
         self.write_metadata(list_length, str(run_list[0]))
