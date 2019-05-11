@@ -143,8 +143,8 @@ class BatchGameRunner:
         return goals, move_count
 
     #---- Experiment execution
-    def constuct_server_command(self, game, start_clock, play_clock, player1, player2):
-        command = self.gradle_command + " -Pmyargs=\"" + "results" + " " + game + " " + start_clock + " " + play_clock + " " \
+    def construct_server_command(self, game, start_clock, play_clock, player1, player2):
+        command = self.gradle_command + " -Pmyargs=\"" + self.server_folder_id + " " + game + " " + start_clock + " " + play_clock + " " \
                     + player1.ip + " " + str(player1.port) + " " + player1.type + " " \
                     + player2.ip + " " + str(player2.port) + " " + player2.type + "\""
         return command
@@ -184,7 +184,7 @@ class BatchGameRunner:
         self.write_metadata(runs, start_clock)
         time.sleep(5)
         self.time_start = time.time()
-        command = self.constuct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
+        command = self.construct_server_command(self.game_name, start_clock, self.play_clock, self.player1, self.player2)
         for iteration in range(runs):
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
             process.wait()
@@ -206,7 +206,7 @@ class BatchGameRunner:
         self.time_start = time.time()
 
         for run_ind in range(list_length):
-            command = self.constuct_server_command(self.game_name, str(run_list[run_ind]), self.play_clock, self.player1, self.player2)
+            command = self.construct_server_command(self.game_name, str(run_list[run_ind]), self.play_clock, self.player1, self.player2)
             process = subprocess.Popen(command, cwd=self.ggp_base_path, shell=True)
             process.wait()
 
