@@ -60,22 +60,12 @@ class BatchGameRunner:
 
     def update_total_runtime(self):
         time_now = str(time.time() - self.time_start)
-        file = fileinput.FileInput(self.filepath, inplace=True)
-        
-        for line in file:
-            if '#Total runtime: ' in line:
-                sys.stdout.write('#Total runtime: ' + time_now + '\n')
-            else:
-                sys.stdout.write(line)
-    
-    def set_start_clock(self, start_clock):
-        file = fileinput.FileInput(self.filepath, inplace=True)
-        
-        for line in file:
-            if '#Start_clock: ' in line:
-                sys.stdout.write('#Start_clock: ' + start_clock + '\n')
-            else:
-                sys.stdout.write(line)
+        with open(self.filepath, 'w') as log_file:
+            for line in log_file.readlines():
+                if '#Total runtime: ' in line:
+                    log_file.write("#Total runtime: " + time_now + '\n')
+                else:
+                    log_file.write(line)
 
     def process_player_data(self, data_string):
         if isinstance(data_string, str):
