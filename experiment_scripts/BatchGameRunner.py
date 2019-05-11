@@ -59,9 +59,12 @@ class BatchGameRunner:
             log_file.write("Winner, Player 1 sarsa iterations, Player 1 list of iterations per state, Player 1 list of time taken per state, Player 2 sarsa iterations, Player 2 list of iterations per state, Player 2 time taken per state, Number of moves made" + '\n')
 
     def update_total_runtime(self):
-        time_now = str(time.time() - self.time_start)
-        with open(self.filepath, 'w') as log_file:
-            for line in log_file.readlines():
+        with open(self.filepath, 'r+') as log_file:
+            time_now = str(time.time() - self.time_start)
+            lines = log_file.readlines()
+            log_file.seek(0)
+            log_file.truncate()
+            for line in lines:
                 if '#Total runtime: ' in line:
                     log_file.write("#Total runtime: " + time_now + '\n')
                 else:
