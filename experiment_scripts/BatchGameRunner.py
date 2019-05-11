@@ -191,12 +191,12 @@ class BatchGameRunner:
 
             self.write_game()
 
-            print "Run #" + str(iteration+1) +" finished!"
+            #print "Run #" + str(iteration+1) +" finished!"
             self.update_total_runtime()
 
         time.sleep(1)
         self.remove_server_folder()
-        print "Batch run finished."
+        #print "Batch run finished."
     
     def run_tests_from_list(self, run_list):
         self.make_server_folder()
@@ -214,12 +214,12 @@ class BatchGameRunner:
 
             self.write_game()
 
-            print "Run #" + str(run_ind+1) +" finished!"
+            #print "Run #" + str(run_ind+1) +" finished!"
             self.update_total_runtime()
 
         time.sleep(1)
         self.remove_server_folder()
-        print "Batch run finished."
+        #print "Batch run finished."
 
 
 if __name__ == "__main__":
