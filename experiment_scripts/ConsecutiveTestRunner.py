@@ -6,7 +6,7 @@ def regression_test_launcher(ip1, ip2, thread_id):
         test = Regressor_test(ip1, ip2, server_results_folder=thread_id)
         test.start_test()
     except:
-        logging.exception("\n**********************EXCEPTION IN THREAD " + thread_id +  " **********************\n")
+        logging.exception("\n********************** EXCEPTION IN THREAD " + thread_id +  " **********************\n")
 
 def random_string(length=6):   
     characters = string.letters
