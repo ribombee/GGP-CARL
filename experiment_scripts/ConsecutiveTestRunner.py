@@ -20,8 +20,12 @@ if __name__ == "__main__":
     with open(ips_path, 'r') as ip_file:
         for line in ip_file:
             line = line.strip("\n")
-            ip1, ip2 = line.split(" ")
-            ip_sets.append((ip1,ip2))
+            split_line = line.split(" ")
+            if len(split_line) == 2:
+                ip1, ip2 = split_line 
+                ip_sets.append((ip1,ip2))
+            else:
+                continue
 
     thread_pool = []
     for index, ip_set in enumerate(ip_sets):
