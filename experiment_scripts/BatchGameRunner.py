@@ -1,7 +1,7 @@
 #This will run a batch of the following command:
 #./gameServerRunner <results directory> <game key> <start clock> <play clock> <player host 1> <player port 1> <player name 1> <player host 2> <player port 2> <player name 2> etc.
 
-import subprocess, os, sys, time, datetime, csv, json, fileinput
+import subprocess, os, sys, time, datetime, csv, json, fileinput, shutil
 from PlayerClient import PlayerClient
 
 class Player_info:
@@ -112,10 +112,10 @@ class BatchGameRunner:
         path = self.ggp_base_path + "/" + self.server_folder_id
         if not os.path.isdir(path):
             os.mkdir(path)
-    #def remove_server_folder():
-    #    path = self.ggp_base_path + "/" + self.server_folder_id
-    #    if os.path.isdir(path):
-    #        os.rmdir
+    def remove_server_folder(self):
+        path = self.ggp_base_path + "/" + self.server_folder_id
+        if os.path.isdir(path):
+            shutil.rmtree(path)
 
     def select_oldest_json(self, origin):
         filenames = os.listdir(origin)
@@ -194,6 +194,8 @@ class BatchGameRunner:
             print "Run #" + str(iteration+1) +" finished!"
             self.update_total_runtime()
 
+        time.sleep(1)
+        self.remove_server_folder()
         print "Batch run finished."
     
     def run_tests_from_list(self, run_list):
@@ -215,6 +217,8 @@ class BatchGameRunner:
             print "Run #" + str(run_ind+1) +" finished!"
             self.update_total_runtime()
 
+        time.sleep(1)
+        self.remove_server_folder()
         print "Batch run finished."
 
 
