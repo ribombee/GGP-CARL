@@ -343,7 +343,9 @@ class CarlPlayer(MatchPlayer):
         self.last_move = self.sm.get_joint_move()
         self.last_state = self.sm.new_base_state()
 
-        self.sarsa_iterations = self.perform_sarsa(finish_time)
+        time_to_train = finish_time - time.time()
+        if time_to_train > 7:
+            self.perform_sarsa(finish_time)
 
         print "Sarsa finished."
         print "Average branching factor: " + str(self.average_branching_factor)
@@ -387,6 +389,8 @@ class CarlPlayer(MatchPlayer):
 
         CarlUtils.log_to_csv(self)
 
+        self.iteration_count_list = []
+        self.time_list = []
         if self.master_root is not None:
             tree_cleanup(self.master_root)
             self.master_root = None
