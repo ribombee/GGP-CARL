@@ -8,7 +8,7 @@ from BatchGameRunner import BatchGameRunner
 from BatchGameRunner import Player_info
 
 class Regressor_test:
-        def __init__(self, p1_ip, p2_ip = None):
+        def __init__(self, p1_ip, p2_ip = None, server_results_folder="results"):
                 self.game = "connectFour"
                 self.start_clock_test_list = [300,600,1200]
                 self.play_clock = "120" #this amount of time should be excessive

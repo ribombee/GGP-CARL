@@ -18,25 +18,25 @@ class BatchGameRunner:
     player1 = None
     player2 = None
     ggp_base_path = ""
-    ggp_base_results_file = "results"
-    filedir = "logs/"
+    server_folder_id = "results"
+    result_dir = "logs/"
     filepath = ""
     max_expansions = -1
 
     #---- File IO
-    def get_file_suffix(self, filename):
+    def strip_to_digits(self, filename):
         stripped = filter(lambda x : x.isdigit(), filename)
         return stripped
         
     #Return incremental IDs for files with the same name.
     def choose_file_suffix(self, logname):
         our_path = os.path.dirname(os.path.realpath(__file__))
-        filenames = os.listdir(our_path +  "/" +self.filedir)
+        filenames = os.listdir(our_path +  "/" +self.result_dir)
 
         highest_count = -1
         for filename in filenames:
             if logname in filename:
-                file_count = int(self.get_file_suffix(filename))
+                file_count = int(self.strip_to_digits(filename))
                 if file_count > highest_count:
                     highest_count = file_count
         return highest_count + 1     
@@ -87,7 +87,7 @@ class BatchGameRunner:
         
              
     def write_game(self):
-        goals, move_count = self.get_server_json(True)
+        goals, move_count = self.get_server_json(False)
         winner = ""
 
         if goals[0] > goals[1]:
@@ -109,21 +109,26 @@ class BatchGameRunner:
         self.player1.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
         self.player2.client.command("rm ~/Documents/CarlAgent/GGP-CARL/PlayerLog.csv")
 
+    def select_oldest_json(self, origin):
+        filenames = os.listdir(origin)
+        filenames = filter(lambda x: '.json' in x, filenames)
+        file_age = lambda x: int(self.strip_to_digits(x))
+        filenames.sort(key=file_age)
+        print filenames
+        return filenames[0]
+
     #Get final rewards for each player and total move count from json string
     def get_server_json(self, remove_file = True):
-        path = self.ggp_base_path + "/" + self.ggp_base_results_file
-        filenames = os.listdir(path)
-        filenames = filter(lambda x: '.json' in x, filenames)
-        filename = filenames[0]
-
+        path = self.ggp_base_path + "/" + self.server_folder_id
+        json_file = self.select_oldest_json(path)
         goals, move_count = None, 0
-        with open(path + "/" + filename, 'r') as results_file:
+        with open(path + "/" + json_file, 'r') as results_file:
             info = json.loads(results_file.read())
             goals = info['goalValues']
             moves = info['moves']
             move_count = len(moves)
         if remove_file:
-            remove_process = subprocess.Popen("rm " + filename, cwd=path, shell=True)
+            remove_process = subprocess.Popen("rm " + json_file, cwd=path, shell=True)
             remove_process.wait()
         return goals, move_count
 
@@ -140,7 +145,7 @@ class BatchGameRunner:
         player.client.update_player_repo()
         player.client.start_player(player.type, player.regressor, player.port, self.max_expansions)
 
-    def setup(self, game, play_clock, player1_data, player2_data, max_expansions=-1, password=None):
+    def setup(self, game, play_clock, player1_data, player2_data, max_expansions=-1, password=None, server_folder_id="results"):
         self.game_name = game
         self.play_clock = play_clock
         
@@ -152,6 +157,8 @@ class BatchGameRunner:
         #Saving environment variables as a dict
         environment_vars = os.environ.copy()
         self.ggp_base_path = environment_vars["GGPLIB_PATH"] + "/ggp-base"
+        
+        self.server_folder_id = server_folder_id
         self.gradle_command = "./gradlew gameServerRunner"
 
 
@@ -160,7 +167,7 @@ class BatchGameRunner:
 
         filename = self.game_name + "_" + self.player1.type + "_" + self.player2.type + "_"
         filename += str(self.choose_file_suffix(filename)) + ".csv"
-        self.filepath = self.filedir + filename
+        self.filepath = self.result_dir + filename
 
     def run_tests(self, runs, start_clock):
         self.write_metadata(runs, start_clock)
