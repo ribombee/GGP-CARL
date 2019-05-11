@@ -87,7 +87,7 @@ class BatchGameRunner:
         
              
     def write_game(self):
-        goals, move_count = self.get_server_json(False)
+        goals, move_count = self.get_server_json(True)
         winner = ""
 
         if goals[0] > goals[1]:
