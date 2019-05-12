@@ -327,9 +327,16 @@ class CarlPlayer(MatchPlayer):
         self.average_branching_factor = 0
         self.average_depth = 0
         self.sarsa_expansions = 0
-        for role_index in range(self.role_count):
-            self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
-            #self.sarsaAgents[role_index] = SarsaTabular()
+        
+        if self.keep_estimators:
+            if self.match is None or not self.match.game_info.game == match.game_info.game:
+                for role_index in range(self.role_count):
+                    #Restart sarsa agents
+                    self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
+        else:
+            for role_index in range(self.role_count):
+                #Restart sarsa agents
+                self.sarsa_agents[role_index] = SarsaEstimator(clone(self.estimator), len(match.game_info.model.actions[role_index]))
         
         self.playout_policy = CarlUtils.RandomPolicy(self.role_count)
 
@@ -343,7 +350,9 @@ class CarlPlayer(MatchPlayer):
         self.last_move = self.sm.get_joint_move()
         self.last_state = self.sm.new_base_state()
 
-        self.perform_sarsa(finish_time)
+        time_to_train = finish_time - time.time()
+        if time_to_train > 7 or not self.keep_estimators:
+            self.perform_sarsa(finish_time)
 
         print "Sarsa finished."
         print "Average branching factor: " + str(self.average_branching_factor)
