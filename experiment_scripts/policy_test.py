@@ -6,7 +6,7 @@ from BatchGameRunner import Player_info
 
 class Policy_test:
         def __init__(self, p1_ip, p2_ip = None, server_results_folder="results"):
-                self.games = ["connectFour", "breakthrough", "amazons", "checkers", "2pttc"]
+                self.games = ["connectFour", "breakthrough", "amazons", "checkers"]
 
                 self.start_clock = 600
                 self.play_clock = "400" #Should not be exceeded
