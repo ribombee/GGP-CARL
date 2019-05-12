@@ -327,7 +327,7 @@ class CarlPlayer(MatchPlayer):
         self.average_branching_factor = 0
         self.average_depth = 0
         self.sarsa_expansions = 0
-        
+
         if self.keep_estimators:
             if self.match is None or not self.match.game_info.game == match.game_info.game:
                 for role_index in range(self.role_count):
@@ -357,8 +357,8 @@ class CarlPlayer(MatchPlayer):
         print "Sarsa finished."
         print "Average branching factor: " + str(self.average_branching_factor)
         print "Average depth: " + str(self.average_depth)
-        estimated_explored = math.log(self.sarsa_expansions,self.average_branching_factor)/self.average_depth
-        print "Estimated state space explored: " + str(estimated_explored)
+        #estimated_explored = math.log(self.sarsa_expansions,self.average_branching_factor)/self.average_depth
+        #print "Estimated state space explored: " + str(estimated_explored)
 
         if self.selection_policy_type == "sucb":
             self.selection_policy = CarlUtils.SarsaSelectionPolicy(self.role_count, self.sarsa_agents)
