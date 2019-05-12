@@ -1,5 +1,6 @@
 import sys, time, threading, logging, traceback, random, string
 from regressor_test import Regressor_test
+from policy_test import Policy_test
 
 def regression_test_launcher(ip1, ip2, thread_id):
     try:
