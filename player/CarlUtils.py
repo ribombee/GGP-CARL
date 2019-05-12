@@ -98,8 +98,8 @@ class SarsaSelectionPolicy(Policy):
 
 
     #beta values start at 1 and lower over more visits
-    def beta_val(self, action):
-        return math.sqrt(float(self.K) / float(3 * action.N + self.K))
+    def beta_val(self, node):
+        return math.sqrt(float(self.K) / float(3 * node.N + self.K))
     
     def find_action(self, current_node, current_state, sm, role_index):
         best_action = -1
@@ -111,7 +111,7 @@ class SarsaSelectionPolicy(Policy):
             if action.sarsa_Q is None:
                 action.sarsa_Q = self.sarsa_agents[role_index].value(current_state, action_index)
             
-            beta = self.beta_val(action)
+            beta = self.beta_val(current_node)
             ucb_Q = beta*action.sarsa_Q + (1-beta)*action.Q
             current_sucb = ucb(current_node, ucb_Q, action.N)
 

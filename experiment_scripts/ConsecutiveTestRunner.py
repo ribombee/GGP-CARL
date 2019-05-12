@@ -4,7 +4,7 @@ from policy_test import Policy_test
 
 def regression_test_launcher(ip1, ip2, thread_id):
     try:
-        test = Regressor_test(ip1, ip2, server_results_folder=thread_id)
+        test = Policy_test(ip1, ip2, server_results_folder=thread_id)
         test.start_test()
     except:
         logging.exception("\n********************** EXCEPTION IN THREAD " + thread_id +  " **********************\n")
