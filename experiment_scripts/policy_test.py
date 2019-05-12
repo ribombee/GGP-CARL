@@ -13,12 +13,12 @@ class Policy_test:
 
                 self.p1_ip = p1_ip
                 
-                self.p1_types = ["carl_selection", "carl_playouts", "mcts"]
+                self.p1_types = ["carl_selection", "carl_playout", "mcts"]
                 self.p1_port = 1337
                 self.p1_regressor = "mlp"
 
                 self.p2_ip = p1_ip if p2_ip is None else p2_ip
-                self.p2_types = ["carl_selection", "carl_playouts", "mcts"]
+                self.p2_types = ["carl_selection", "carl_playout", "mcts"]
                 self.p2_port = 1337 if not p2_ip == p1_ip else 1338 
                 self.p2_regressor = "mlp"
 

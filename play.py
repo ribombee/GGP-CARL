@@ -1,4 +1,4 @@
-
+import logging
 from twisted.internet import reactor
 from twisted.web import server
 
@@ -79,4 +79,5 @@ def main():
 ###############################################################################
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='errors.log',level=logging.ERROR)
     main()
