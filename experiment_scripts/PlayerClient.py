@@ -7,7 +7,9 @@ class Client:
 		self.pw = password
 		self.ssh = paramiko.SSHClient()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-		self.ssh.connect(hostname=self.ip, password=self.pw, timeout=10)
+		self.ssh.connect(hostname=self.ip, password=self.pw)
+		transport = self.ssh.get_transport()
+		transport.set_keepalive(60)
 		self.channel = self.ssh.invoke_shell()
 		self.buff = self.channel.recv(1024)
 
