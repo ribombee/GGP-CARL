@@ -197,19 +197,19 @@ class BatchAnalyzer:
     def visualize(self):
         plt.figure(figsize=(15, 10))
         ax = sns.lineplot(x="start clock", y="winrate",
-            hue="regressor", data=self.regressor_df)
+            hue="regressor", data=self.regressor_df, marker="o")
         self.adjust_graph_fontsize(ax)
         plt.show()
 
         plt.figure(figsize=(15,10))
         ax = sns.lineplot(x="start clock", y = "eot",
-            hue="regressor", data = self.regressor_df)
+            hue="regressor", data = self.regressor_df, marker="o")
         self.adjust_graph_fontsize(ax)
         plt.show()
 
         plt.figure(figsize=(15,10))
         ax = sns.lineplot(x="start clock", y = "eef",
-            hue = "regressor", data = self.regressor_df)
+            hue = "regressor", data = self.regressor_df, marker="o")
         self.adjust_graph_fontsize(ax)
         plt.show()
 
