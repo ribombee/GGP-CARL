@@ -29,4 +29,4 @@ IP5 IP6
 
 # Acknowledgements
 
-This code is built in large part on Richard Eimslie's work, in particular ggplib and the accompanying implementation of MCS. It is also built on Reykjavík University's CADIA player.
+This code is built in large part on Richard Emslie's work, in particular ggplib and the accompanying implementation of MCS. It is also built on Reykjavík University's CADIA player.
