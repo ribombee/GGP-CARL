@@ -10,7 +10,7 @@ This paper proposes CARL, a pair of agents thatapply  reinforcement  learning  a
 # Requirements and setup
 
 This project was written in Python 2.7 on Ubuntu 16.04.
-We rely heavily on Richard Eimslie's [ggplib](https://github.com/richemslie/ggplib).
+We rely heavily on Richard Emslie's [ggplib](https://github.com/richemslie/ggplib).
 We have written a shell script that can be found in /etc/SetupScript.sh, which will fetch required packages and repositories, as well as set up the environment required for the project.
 
 This project has been written and tested on Ubuntu 16.04, and a vast majority of our experiments have been run on the google cloud computing service. The experiment scripts are provided under /experiment_scripts, but under no warranty of them working under other circumstances.
