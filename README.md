@@ -5,7 +5,7 @@ This project was done as a thesis for a Bachelor of Science in Computer Science 
 We propose an agent that learns generalizable information through reinforcement learning which it can then apply in search control for MCTS.
 
 ## Abstract
-This paper proposes CARL, a pair of agents thatapply  reinforcement  learning  and  function  ap-proximation using regression to learn policies forgames where human heuristics cannot be applied.The purpose of these policies is to do search con-trol in Monte Carlo Tree Search (MCTS), a heuristic search algorithm to see if the learned policiescan outperform upper confidence bound for trees(UCT)
+This paper proposes CARL, a pair of agents thatapply  reinforcement  learning  and  function  ap-proximation using regression to learn policies forgames where human heuristics cannot be applied.The purpose of these policies is to do search control in Monte Carlo Tree Search (MCTS), a heuristic search algorithm to see if the learned policiescan outperform upper confidence bound for trees(UCT)
 
 # Requirements and setup
 
